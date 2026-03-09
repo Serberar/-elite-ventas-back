@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  administrador @map("administrador")
+  verificador   @map("verificador")
+  coordinador   @map("coordinador")
+  comercial     @map("comercial")
+}
+
+model User {
+  id                    String    @id @default(uuid())
+  firstName             String
+  lastName              String
+  username              String    @unique
+  password              String
+  role                  Role      @default(administrador)
+  active                Boolean   @default(true)
+  failedLoginAttempts   Int       @default(0)
+  createdAt             DateTime  @default(now())
+  lastLoginAt           DateTime?
+  refreshToken          String?
+  refreshTokenExpiresAt DateTime?
+
+  // relaciones inversas
+  assignments        SaleAssignment[]
+  saleHistories      SaleHistory[]
+  uploadedRecordings SaleRecording[]
+}
+
+model Client {
+  id           String   @id @default(uuid())
+  firstName    String
+  lastName     String
+  dni          String
+  email        String
+  birthday     String
+  phones       String[]
+  addresses    Json
+  bankAccounts String[]
+  authorized   String?
+  businessName String?
+  comments     String[]
+  createdAt    DateTime @default(now())
+  lastModified DateTime @updatedAt
+
+  sales Sale[]
+
+  @@index([dni])
+  @@index([phones(ops: ArrayOps)], type: Gin)
+  @@index([createdAt])
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  sku         String?  @unique
+  price       Decimal
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Tipo de pago
+  tipo          String   @default("unico")   // 'unico' | 'periodico' | 'consumo'
+  periodo       String?                       // 'semanal'|'mensual'|'trimestral'|'semestral'|'anual'
+  precioBase    Decimal?                      // consumo: cuota fija base
+  precioConsumo Decimal?                      // consumo: precio por unidad (kWh, m³…)
+  unidadConsumo String?                       // consumo: etiqueta de unidad ('kWh', 'm³', 'hora'…)
+
+  saleItems SaleItem[]
+}
+
+model Sale {
+  id       String @id @default(uuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+
+  statusId String
+  status   SaleStatus @relation(fields: [statusId], references: [id])
+
+  totalAmount     Decimal @default(0)
+  notes           Json?   // [{message, userId, role, createdAt}]
+  metadata        Json?
+
+  // 🔥 NUEVOS CAMPOS PARA SNAPSHOTS
+  clientSnapshot  Json?   // ← snapshot del cliente editado en el front
+  addressSnapshot Json?   // ← snapshot de la dirección seleccionada
+  comercial       String? // ← nombre del comercial que hace la venta
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  closedAt  DateTime?
+
+  items            SaleItem[]
+  assignments      SaleAssignment[]
+  histories        SaleHistory[]
+  recordings       SaleRecording[]
+  signatureRequest SignatureRequest?
+
+  // Índices para mejorar rendimiento de consultas frecuentes
+  @@index([clientId])
+  @@index([statusId])
+  @@index([comercial])
+  @@index([createdAt])
+  @@index([createdAt, statusId]) // Índice compuesto para filtros comunes
+}
+
+model SignatureRequest {
+  id                 String    @id @default(uuid())
+  saleId             String    @unique
+  sale               Sale      @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  status             String    // "pending" | "signed" | "rejected"
+  signerEmail        String
+  providerDocumentId String?
+  signedDocumentUrl  String?
+  rejectionReason    String?
+
+  sentAt             DateTime?
+  signedAt           DateTime?
+  rejectedAt         DateTime?
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([saleId])
+  @@index([status])
+  @@index([providerDocumentId])
+}
+
+model SaleItem {
+  id     String @id @default(uuid())
+  saleId String
+  sale   Sale   @relation(fields: [saleId], references: [id])
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  nameSnapshot String
+  skuSnapshot  String?
+  unitPrice    Decimal
+  quantity     Int
+  finalPrice   Decimal
+
+  // Snapshots del tipo de producto al momento de la venta
+  tipoSnapshot          String?
+  periodoSnapshot       String?
+  precioBaseSnapshot    Decimal?
+  precioConsumoSnapshot Decimal?
+  unidadConsumoSnapshot String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Índices para mejorar rendimiento
+  @@index([saleId])
+  @@index([productId])
+}
+
+model SaleStatus {
+  id          String  @id @default(uuid())
+  name        String
+  order       Int
+  color       String?
+  isFinal     Boolean @default(false)
+  isCancelled Boolean @default(false)
+  isSystem    Boolean @default(false)
+
+  sales Sale[]
+}
+
+model SaleHistory {
+  id     String @id @default(uuid())
+  saleId String
+  sale   Sale   @relation(fields: [saleId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  action    String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([saleId])
+}
+
+model SaleAssignment {
+  id       String @id @default(uuid())
+  saleId   String
+  sale     Sale   @relation(fields: [saleId], references: [id])
+
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+
+  role      String
+  createdAt DateTime @default(now())
+
+  @@index([saleId])
+  @@index([userId])
+}
+
+model SaleRecording {
+  id           String   @id @default(uuid())
+  saleId       String
+  sale         Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  filename     String   // nombre original del archivo
+  storagePath  String   // ruta relativa: records/{saleId}/{uuid}.ext
+  mimeType     String   // audio/mpeg, audio/wav, video/mp4, etc.
+  size         Int      // tamaño en bytes
+
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+
+  createdAt    DateTime @default(now())
+
+  @@index([saleId])
+}
+
+model AllowedIp {
+  id          String   @id @default(uuid())
+  ip          String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+}
+
+model SystemSetting {
+  key   String @id
+  value String
+}

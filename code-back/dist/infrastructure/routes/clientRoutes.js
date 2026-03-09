@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const ClientController_1 = require("../express/controllers/ClientController");
+const authMiddleware_1 = require("../express/middleware/authMiddleware");
+const validateRequest_1 = require("../express/middleware/validateRequest");
+const clientSchemas_1 = require("../express/validation/clientSchemas");
+const router = (0, express_1.Router)();
+router.get('/:value', authMiddleware_1.authMiddleware, (0, validateRequest_1.validateRequest)(clientSchemas_1.getClientByIdSchema), ClientController_1.ClientController.getClient.bind(ClientController_1.ClientController));
+router.post('/', authMiddleware_1.authMiddleware, (0, validateRequest_1.validateRequest)(clientSchemas_1.createClientSchema), ClientController_1.ClientController.createClient.bind(ClientController_1.ClientController));
+router.put('/:id', authMiddleware_1.authMiddleware, (0, validateRequest_1.validateRequest)(clientSchemas_1.updateClientSchema), ClientController_1.ClientController.updateClient.bind(ClientController_1.ClientController));
+router.post('/:id/push', authMiddleware_1.authMiddleware, (0, validateRequest_1.validateRequest)(clientSchemas_1.pushDataClientSchema), ClientController_1.ClientController.pushClientData.bind(ClientController_1.ClientController));
+exports.default = router;
