@@ -48,7 +48,7 @@ export class SaleController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
       const saleWithRelations = await serviceContainer.saleRepository.findWithRelations(saleId);
 
       if (!saleWithRelations) {
@@ -115,7 +115,7 @@ export class SaleController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
       const { name, price, quantity } = req.body;
 
       if (!name || price == null || quantity == null) {
@@ -154,7 +154,7 @@ export class SaleController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId, itemId } = req.params;
+      const { saleId, itemId } = req.params as Record<string, string>;
       const dto = {
         saleId,
         items: [{
@@ -181,7 +181,7 @@ export class SaleController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId, itemId } = req.params;
+      const { saleId, itemId } = req.params as Record<string, string>;
       await serviceContainer.removeSaleItemUseCase.execute(saleId, itemId, currentUser);
       const saleWithRelations = await serviceContainer.saleRepository.findWithRelations(saleId);
 
@@ -198,7 +198,7 @@ export class SaleController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
       const dto = {
         saleId,
         statusId: req.body.statusId,
@@ -221,7 +221,7 @@ export class SaleController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
       const { clientSnapshot, comercial } = req.body;
 
       if (!clientSnapshot) throw new ValidationError('El clientSnapshot es requerido');

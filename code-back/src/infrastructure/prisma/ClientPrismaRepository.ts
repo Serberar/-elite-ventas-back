@@ -35,6 +35,20 @@ export class ClientPrismaRepository implements IClientRepository {
     );
   }
 
+  async delete(id: string): Promise<void> {
+    // Transacción: desvincula el cliente de sus ventas (clientId → null)
+    // y luego elimina el registro. Los snapshots de venta conservan los datos.
+    await dbCircuitBreaker.execute(() =>
+      prisma.$transaction([
+        prisma.sale.updateMany({
+          where: { clientId: id },
+          data: { clientId: null },
+        }),
+        prisma.client.delete({ where: { id } }),
+      ])
+    );
+  }
+
   async getByPhoneOrDNI(value: string): Promise<Client[]> {
     const clientsData = await dbCircuitBreaker.execute(() =>
       prisma.client.findMany({

@@ -57,7 +57,7 @@ describe('Integration: Product Routes', () => {
     app = express();
     app.use(express.json());
     app.use('/api/products', productRoutes);
-    app.use((err: any, req: any, res: any, next: any) => errorHandler(err, req, res));
+    app.use((err: any, req: any, res: any, next: any) => errorHandler(err, req, res, next));
   });
 
   beforeEach(() => {

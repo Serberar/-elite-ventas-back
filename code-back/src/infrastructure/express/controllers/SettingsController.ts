@@ -3,7 +3,7 @@ import { serviceContainer } from '@infrastructure/container/ServiceContainer';
 import { AuthenticationError, ValidationError } from '@application/shared/AppError';
 
 /** Claves permitidas de configuración (whitelist explícita) */
-const ALLOWED_KEYS = new Set(['firma_requerida']);
+const ALLOWED_KEYS = new Set(['firma_requerida', 'ventas_sin_firma']);
 
 export class SettingsController {
   // GET /api/settings/:key
@@ -12,13 +12,14 @@ export class SettingsController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { key } = req.params;
+      const { key } = req.params as Record<string, string>;
       if (!ALLOWED_KEYS.has(key)) {
         return res.status(404).json({ message: `Configuración '${key}' no encontrada` });
       }
 
-      // firma_requerida: default true
-      const value = await serviceContainer.getSystemSettingUseCase.executeAsBool(key, true);
+      // firma_requerida: default true; ventas_sin_firma: default false
+      const defaultValue = key === 'ventas_sin_firma' ? false : true;
+      const value = await serviceContainer.getSystemSettingUseCase.executeAsBool(key, defaultValue);
       res.status(200).json({ key, value });
     } catch (error) {
       next(error);
@@ -31,7 +32,7 @@ export class SettingsController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { key } = req.params;
+      const { key } = req.params as Record<string, string>;
       if (!ALLOWED_KEYS.has(key)) {
         return res.status(404).json({ message: `Configuración '${key}' no encontrada` });
       }

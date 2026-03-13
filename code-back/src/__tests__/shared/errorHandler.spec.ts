@@ -51,7 +51,7 @@ describe('errorHandler middleware', () => {
         { field: 'email', message: 'Email inválido' },
       ]);
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.statusMock).toHaveBeenCalledWith(400);
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
@@ -67,7 +67,7 @@ describe('errorHandler middleware', () => {
     it('should handle AuthenticationError (401)', () => {
       const error = new AuthenticationError('No autenticado');
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.statusMock).toHaveBeenCalledWith(401);
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
@@ -82,7 +82,7 @@ describe('errorHandler middleware', () => {
     it('should handle AuthorizationError (403)', () => {
       const error = new AuthorizationError('Sin permisos');
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.statusMock).toHaveBeenCalledWith(403);
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
@@ -97,7 +97,7 @@ describe('errorHandler middleware', () => {
     it('should handle NotFoundError (404)', () => {
       const error = new NotFoundError('Usuario', '123');
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.statusMock).toHaveBeenCalledWith(404);
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
@@ -112,7 +112,7 @@ describe('errorHandler middleware', () => {
     it('should handle ConflictError (409)', () => {
       const error = new ConflictError('Email ya existe');
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.statusMock).toHaveBeenCalledWith(409);
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
@@ -127,7 +127,7 @@ describe('errorHandler middleware', () => {
     it('should handle DatabaseError (500)', () => {
       const error = new DatabaseError('Error de conexión');
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.statusMock).toHaveBeenCalledWith(500);
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
@@ -148,7 +148,7 @@ describe('errorHandler middleware', () => {
         meta: { target: ['email'] },
       });
 
-      errorHandler(prismaError, mockRequest as Request, mockResponse as Response);
+      errorHandler(prismaError, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.statusMock).toHaveBeenCalledWith(409);
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
@@ -166,7 +166,7 @@ describe('errorHandler middleware', () => {
         clientVersion: '5.0.0',
       });
 
-      errorHandler(prismaError, mockRequest as Request, mockResponse as Response);
+      errorHandler(prismaError, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.statusMock).toHaveBeenCalledWith(404);
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
@@ -188,7 +188,7 @@ describe('errorHandler middleware', () => {
         }
       );
 
-      errorHandler(prismaError, mockRequest as Request, mockResponse as Response);
+      errorHandler(prismaError, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.statusMock).toHaveBeenCalledWith(400);
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
@@ -205,7 +205,7 @@ describe('errorHandler middleware', () => {
         clientVersion: '5.0.0',
       });
 
-      errorHandler(prismaError, mockRequest as Request, mockResponse as Response);
+      errorHandler(prismaError, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.statusMock).toHaveBeenCalledWith(500);
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
@@ -221,7 +221,7 @@ describe('errorHandler middleware', () => {
     it('should handle generic Error (500)', () => {
       const error = new Error('Something went wrong');
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.statusMock).toHaveBeenCalledWith(500);
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
@@ -236,7 +236,7 @@ describe('errorHandler middleware', () => {
       process.env.NODE_ENV = 'production';
       const error = new Error('Production error');
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
         expect.not.objectContaining({
@@ -249,7 +249,7 @@ describe('errorHandler middleware', () => {
       process.env.NODE_ENV = 'development';
       const error = new AppError('Dev error', 500);
 
-      errorHandler(error, mockRequest as Request, mockResponse as Response);
+      errorHandler(error, mockRequest as Request, mockResponse as Response, jest.fn() as any);
 
       expect(mockResponse.jsonMock).toHaveBeenCalledWith(
         expect.objectContaining({

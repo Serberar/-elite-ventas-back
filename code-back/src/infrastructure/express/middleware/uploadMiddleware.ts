@@ -21,7 +21,7 @@ const MAX_SIZE = parseInt(process.env.MAX_RECORDING_SIZE || '104857600'); // 100
 
 const storage = multer.diskStorage({
   destination: (req: Request, file, cb) => {
-    const saleId = req.params.saleId;
+    const saleId = (req.params as Record<string, string>).saleId;
     if (!saleId) {
       return cb(new Error('saleId es requerido'), '');
     }
@@ -92,7 +92,7 @@ const templateLogoStorage = multer.diskStorage({
     cb(null, dir);
   },
   filename: (req: Request, file, cb) => {
-    const templateId = req.params.id || 'default';
+    const templateId = (req.params as Record<string, string>).id || 'default';
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
     cb(null, `contract-logo-${templateId}${ext}`);
   },
@@ -102,6 +102,37 @@ export const uploadTemplateLogo = multer({
   storage: templateLogoStorage,
   fileFilter: logoFilter,
   limits: { fileSize: LOGO_MAX_SIZE },
+});
+
+// ── Plantilla Word (.docx) por contrato ────────────────────────────────────
+
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const DOCX_MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+const templateDocxStorage = multer.diskStorage({
+  destination: (req: Request, _file, cb) => {
+    const templateId = (req.params as Record<string, string>).id || 'default';
+    const dir = path.join(RECORDS_DIR, 'contract-templates', templateId);
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (_req, _file, cb) => {
+    cb(null, 'template.docx');
+  },
+});
+
+const docxFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  if (file.mimetype === DOCX_MIME) {
+    cb(null, true);
+  } else {
+    cb(new Error('Solo se permiten ficheros .docx (Word 2007+)'));
+  }
+};
+
+export const uploadTemplateDocx = multer({
+  storage: templateDocxStorage,
+  fileFilter: docxFilter,
+  limits: { fileSize: DOCX_MAX_SIZE },
 });
 
 export { RECORDS_DIR, ALLOWED_MIMES, MAX_SIZE };

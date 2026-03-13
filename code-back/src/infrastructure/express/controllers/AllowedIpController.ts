@@ -46,7 +46,7 @@ export class AllowedIpController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       await serviceContainer.deleteAllowedIpUseCase.execute(id, currentUser);
       res.status(200).json({ message: 'IP permitida eliminada correctamente' });
     } catch (error) {

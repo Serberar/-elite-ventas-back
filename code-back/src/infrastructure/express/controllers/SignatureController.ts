@@ -15,7 +15,7 @@ export class SignatureController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
       const { signerEmail, signerPhone, deliveryMethod, templateId } = req.body;
 
       const signatureRequest = await serviceContainer.generateAndSendContractUseCase.execute(
@@ -39,7 +39,7 @@ export class SignatureController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
       const { signerEmail } = req.body;
 
       const signatureRequest = await serviceContainer.resendSignatureRequestUseCase.execute(
@@ -62,7 +62,7 @@ export class SignatureController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
 
       const signatureRequest = await serviceContainer.getSignatureStatusUseCase.execute(
         saleId,
@@ -81,7 +81,7 @@ export class SignatureController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
 
       await serviceContainer.cancelSignatureRequestUseCase.execute(saleId, currentUser);
 
@@ -238,7 +238,7 @@ export class SignatureController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
 
       const sigReq = await serviceContainer.signatureRequestRepository.findBySaleId(saleId);
       if (!sigReq || !sigReq.providerDocumentId) {
@@ -280,7 +280,7 @@ export class SignatureController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
 
       const sigReq = await serviceContainer.signatureRequestRepository.findBySaleId(saleId);
       if (!sigReq || sigReq.status !== 'signed' || !sigReq.signedDocumentUrl) {

@@ -11,7 +11,7 @@ export class RecordingController {
       const currentUser = req.user;
       if (!currentUser) return res.status(401).json({ message: 'No autorizado' });
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
       const file = req.file;
 
       if (!file) {
@@ -46,7 +46,7 @@ export class RecordingController {
       const currentUser = req.user;
       if (!currentUser) return res.status(401).json({ message: 'No autorizado' });
 
-      const { saleId } = req.params;
+      const { saleId } = req.params as Record<string, string>;
 
       const recordings = await serviceContainer.listRecordingsUseCase.execute(saleId, currentUser);
 
@@ -64,7 +64,7 @@ export class RecordingController {
       const currentUser = req.user;
       if (!currentUser) return res.status(401).json({ message: 'No autorizado' });
 
-      const { recordingId } = req.params;
+      const { recordingId } = req.params as Record<string, string>;
 
       const recording = await serviceContainer.downloadRecordingUseCase.execute(
         recordingId,
@@ -96,7 +96,7 @@ export class RecordingController {
       const currentUser = req.user;
       if (!currentUser) return res.status(401).json({ message: 'No autorizado' });
 
-      const { recordingId } = req.params;
+      const { recordingId } = req.params as Record<string, string>;
 
       await serviceContainer.deleteRecordingUseCase.execute(recordingId, currentUser);
 

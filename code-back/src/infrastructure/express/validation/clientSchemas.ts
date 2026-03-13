@@ -178,8 +178,19 @@ export const pushDataClientSchema = z.object({
     }),
 });
 
+// Esquema para verificar contraseña de eliminación y para eliminar cliente
+export const deleteClientSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('ID de cliente inválido'),
+  }),
+  body: z.object({
+    password: z.string().min(1, 'La contraseña es obligatoria'),
+  }),
+});
+
 // Tipos TypeScript inferidos
 export type CreateClientInput = z.infer<typeof createClientSchema>;
 export type UpdateClientInput = z.infer<typeof updateClientSchema>;
 export type GetClientByIdInput = z.infer<typeof getClientByIdSchema>;
 export type PushDataClientInput = z.infer<typeof pushDataClientSchema>;
+export type DeleteClientInput = z.infer<typeof deleteClientSchema>;

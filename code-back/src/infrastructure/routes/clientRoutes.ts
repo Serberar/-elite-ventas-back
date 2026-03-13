@@ -7,6 +7,7 @@ import {
   updateClientSchema,
   getClientByIdSchema,
   pushDataClientSchema,
+  deleteClientSchema,
 } from '@infrastructure/express/validation/clientSchemas';
 
 const router = Router();
@@ -34,6 +35,18 @@ router.post(
   authMiddleware,
   validateRequest(pushDataClientSchema),
   ClientController.pushClientData.bind(ClientController)
+);
+router.post(
+  '/:id/verify-delete',
+  authMiddleware,
+  validateRequest(deleteClientSchema),
+  ClientController.verifyDeletePassword.bind(ClientController)
+);
+router.delete(
+  '/:id',
+  authMiddleware,
+  validateRequest(deleteClientSchema),
+  ClientController.deleteClient.bind(ClientController)
 );
 
 export default router;

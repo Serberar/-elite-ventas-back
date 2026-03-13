@@ -16,6 +16,7 @@ import { CreateClientUseCase } from '@application/use-cases/client/CreateClientU
 import { GetClientUseCase } from '@application/use-cases/client/GetClientUseCase';
 import { UpdateClientUseCase } from '@application/use-cases/client/UpdateClientUseCase';
 import { PushDataClientUseCase } from '@application/use-cases/client/PushDataClientUseCase';
+import { DeleteClientUseCase } from '@application/use-cases/client/DeleteClientUseCase';
 
 import { AddSaleItemUseCase } from '@application/use-cases/sale/AddSaleItemUseCase';
 import { ChangeSaleStatusUseCase } from '@application/use-cases/sale/ChangeSaleStatusUseCase';
@@ -98,6 +99,7 @@ class ServiceContainer {
   private _getClientUseCase?: GetClientUseCase;
   private _updateClientUseCase?: UpdateClientUseCase;
   private _pushDataClientUseCase?: PushDataClientUseCase;
+  private _deleteClientUseCase?: DeleteClientUseCase;
 
   // Casos de uso de Venta
   private _createSaleWithProductsUseCase?: CreateSaleWithProductsUseCase;
@@ -293,6 +295,13 @@ class ServiceContainer {
       this._pushDataClientUseCase = new PushDataClientUseCase(this.clientRepository);
     }
     return this._pushDataClientUseCase;
+  }
+
+  get deleteClientUseCase(): DeleteClientUseCase {
+    if (!this._deleteClientUseCase) {
+      this._deleteClientUseCase = new DeleteClientUseCase(this.clientRepository);
+    }
+    return this._deleteClientUseCase;
   }
 
   // CASOS DE USO: VENTA

@@ -54,7 +54,7 @@ describe('Integration: Sale Status Routes', () => {
     app = express();
     app.use(express.json());
     app.use('/api/sale-status', saleStatusRoutes);
-    app.use((err: any, req: any, res: any, next: any) => errorHandler(err, req, res));
+    app.use((err: any, req: any, res: any, next: any) => errorHandler(err, req, res, next));
   });
 
   beforeEach(() => {

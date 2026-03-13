@@ -54,7 +54,7 @@ describe('Integration: Client Routes', () => {
     app.use(express.json());
     app.use('/api/clients', clientRoutes);
     // Wrap errorHandler with 4 params so Express recognizes it as an error handler
-    app.use((err: any, req: any, res: any, next: any) => errorHandler(err, req, res));
+    app.use((err: any, req: any, res: any, next: any) => errorHandler(err, req, res, next));
   });
 
   beforeEach(() => {

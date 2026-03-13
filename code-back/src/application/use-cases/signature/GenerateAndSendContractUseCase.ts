@@ -2,6 +2,7 @@ import { ISaleRepository } from '@domain/repositories/ISaleRepository';
 import { ISignatureRequestRepository } from '@domain/repositories/ISignatureRequestRepository';
 import { ISignatureProvider } from '@domain/services/ISignatureProvider';
 import { PdfGenerator } from '@infrastructure/signature/PdfGenerator';
+import { generatePdfFromDocx } from '@infrastructure/signature/DocxPdfGenerator';
 import { SystemSettingPrismaRepository } from '@infrastructure/prisma/SystemSettingPrismaRepository';
 import { ContractConfig } from '@domain/types/ContractConfig';
 import { ContractTemplateController } from '@infrastructure/express/controllers/ContractTemplateController';
@@ -58,7 +59,7 @@ export class GenerateAndSendContractUseCase {
   async generatePreviewPdf(templateId: string | undefined, data: PreviewContractData): Promise<Buffer> {
     const contractConfig = await ContractTemplateController.loadForPdf(templateId);
     const totalAmount = data.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-    return this.pdfGenerator.generate({
+    const contractData = {
       saleId: 'PREVISUALIZACIÓN',
       createdAt: new Date(),
       client: data.client,
@@ -75,7 +76,11 @@ export class GenerateAndSendContractUseCase {
       })),
       totalAmount,
       comercial: data.comercial,
-    }, contractConfig);
+    };
+    if (contractConfig.docxPath) {
+      return generatePdfFromDocx(contractConfig.docxPath, contractData);
+    }
+    return this.pdfGenerator.generate(contractData, contractConfig);
   }
 
   async execute(dto: GenerateAndSendContractDTO, currentUser: CurrentUser): Promise<SignatureRequest> {
@@ -117,7 +122,7 @@ export class GenerateAndSendContractUseCase {
 
     // Cargar configuración de contrato y generar PDF
     const contractConfig = await ContractTemplateController.loadForPdf(dto.templateId);
-    const pdf = await this.pdfGenerator.generate({
+    const contractData = {
       saleId: sale.id,
       createdAt: sale.createdAt,
       client: clientData,
@@ -126,10 +131,19 @@ export class GenerateAndSendContractUseCase {
         quantity: i.quantity,
         unitPrice: Number(i.unitPrice),
         finalPrice: Number(i.finalPrice),
+        tipoSnapshot: (i as any).tipoSnapshot ?? null,
+        periodoSnapshot: (i as any).periodoSnapshot ?? null,
+        precioBaseSnapshot: (i as any).precioBaseSnapshot != null ? Number((i as any).precioBaseSnapshot) : null,
+        precioConsumoSnapshot: (i as any).precioConsumoSnapshot != null ? Number((i as any).precioConsumoSnapshot) : null,
+        unidadConsumoSnapshot: (i as any).unidadConsumoSnapshot ?? null,
       })),
       totalAmount: Number(sale.totalAmount),
       comercial: sale.comercial ?? undefined,
-    }, contractConfig);
+    };
+
+    const pdf = contractConfig.docxPath
+      ? await generatePdfFromDocx(contractConfig.docxPath, contractData)
+      : await this.pdfGenerator.generate(contractData, contractConfig);
 
     // Enviar al proveedor
     const clientFullName = `${clientData.firstName} ${clientData.lastName}`.trim();

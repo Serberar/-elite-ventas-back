@@ -99,7 +99,7 @@ describe('Integration: Sale Routes', () => {
     app = express();
     app.use(express.json());
     app.use('/api/sales', saleRoutes);
-    app.use((err: any, req: any, res: any, next: any) => errorHandler(err, req, res));
+    app.use((err: any, req: any, res: any, next: any) => errorHandler(err, req, res, next));
   });
 
   beforeEach(() => {

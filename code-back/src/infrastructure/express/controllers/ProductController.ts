@@ -66,7 +66,7 @@ export class ProductController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const id = req.params.id;
+      const id = (req.params as Record<string, string>).id;
       if (!id) throw new ValidationError('ID de producto no proporcionado');
 
       const product = await serviceContainer.updateProductUseCase.execute(
@@ -85,7 +85,7 @@ export class ProductController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const id = req.params.id;
+      const id = (req.params as Record<string, string>).id;
       const product = await serviceContainer.toggleProductActiveUseCase.execute(
         { id },
         currentUser

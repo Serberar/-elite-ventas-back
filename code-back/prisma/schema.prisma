@@ -79,8 +79,8 @@ model Product {
 
 model Sale {
   id       String @id @default(uuid())
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id])
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
 
   statusId String
   status   SaleStatus @relation(fields: [statusId], references: [id])

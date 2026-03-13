@@ -18,6 +18,7 @@ import { PreviewContractData } from '@application/use-cases/signature/GenerateAn
 
 const SETTING_TEMPLATES_KEY = 'contrato_templates';
 const SETTING_LOGO_PREFIX = 'contrato_logo_';
+const SETTING_DOCX_PREFIX = 'contrato_docx_';
 const SETTING_OLD_CONFIG_KEY = 'contrato_config';
 const SETTING_OLD_LOGO_KEY = 'contrato_logo';
 
@@ -111,10 +112,13 @@ export class ContractTemplateController {
       const withUrls = await Promise.all(
         templates.map(async (t) => {
           const logoPath = await repo.get(`${SETTING_LOGO_PREFIX}${t.id}`);
+          const docxPath = await repo.get(`${SETTING_DOCX_PREFIX}${t.id}`);
           return {
             ...t,
             logoPath: logoPath || null,
             logoUrl: logoPath ? templateLogoUrl(t.id) : null,
+            docxPath: undefined,
+            tieneDocx: !!(docxPath),
           };
         })
       );
@@ -149,7 +153,7 @@ export class ContractTemplateController {
       templates.push(newTemplate);
       await saveTemplates(templates);
 
-      res.status(201).json({ ...newTemplate, logoUrl: null });
+      res.status(201).json({ ...newTemplate, logoUrl: null, tieneDocx: false });
     } catch (error) {
       next(error);
     }
@@ -160,19 +164,21 @@ export class ContractTemplateController {
     try {
       if (!req.user) throw new AuthenticationError('No autorizado');
 
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const templates = await loadTemplates();
       const template = templates.find((t) => t.id === id);
       if (!template) throw new NotFoundError('Plantilla', id);
 
-      const logoPath = await serviceContainer.systemSettingRepository.get(
-        `${SETTING_LOGO_PREFIX}${id}`
-      );
+      const repo = serviceContainer.systemSettingRepository;
+      const logoPath = await repo.get(`${SETTING_LOGO_PREFIX}${id}`);
+      const docxPath = await repo.get(`${SETTING_DOCX_PREFIX}${id}`);
 
       res.json({
         ...template,
         logoPath: logoPath || null,
         logoUrl: logoPath ? templateLogoUrl(id) : null,
+        docxPath: undefined,
+        tieneDocx: !!(docxPath),
       });
     } catch (error) {
       next(error);
@@ -184,7 +190,7 @@ export class ContractTemplateController {
     try {
       requireAdmin(req);
 
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const templates = await loadTemplates();
       const idx = templates.findIndex((t) => t.id === id);
       if (idx === -1) throw new NotFoundError('Plantilla', id);
@@ -221,14 +227,16 @@ export class ContractTemplateController {
       templates[idx] = updated;
       await saveTemplates(templates);
 
-      const logoPath = await serviceContainer.systemSettingRepository.get(
-        `${SETTING_LOGO_PREFIX}${id}`
-      );
+      const repoForUpdate = serviceContainer.systemSettingRepository;
+      const logoPath = await repoForUpdate.get(`${SETTING_LOGO_PREFIX}${id}`);
+      const docxPathForUpdate = await repoForUpdate.get(`${SETTING_DOCX_PREFIX}${id}`);
 
       res.json({
         ...updated,
         logoPath: logoPath || null,
         logoUrl: logoPath ? templateLogoUrl(id) : null,
+        docxPath: undefined,
+        tieneDocx: !!(docxPathForUpdate),
       });
     } catch (error) {
       next(error);
@@ -240,7 +248,7 @@ export class ContractTemplateController {
     try {
       requireAdmin(req);
 
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const templates = await loadTemplates();
       const idx = templates.findIndex((t) => t.id === id);
       if (idx === -1) throw new NotFoundError('Plantilla', id);
@@ -252,13 +260,19 @@ export class ContractTemplateController {
         templates[0].esDefecto = true;
       }
 
-      // Eliminar logo de disco y setting
+      // Eliminar logo y docx de disco y settings
       const repo = serviceContainer.systemSettingRepository;
       const logoPath = await repo.get(`${SETTING_LOGO_PREFIX}${id}`);
       if (logoPath && fs.existsSync(logoPath)) {
         fs.unlinkSync(logoPath);
       }
       await repo.set(`${SETTING_LOGO_PREFIX}${id}`, '');
+
+      const docxPathToDelete = await repo.get(`${SETTING_DOCX_PREFIX}${id}`);
+      if (docxPathToDelete && fs.existsSync(docxPathToDelete)) {
+        fs.unlinkSync(docxPathToDelete);
+      }
+      await repo.set(`${SETTING_DOCX_PREFIX}${id}`, '');
 
       await saveTemplates(templates);
       res.json({ message: 'Plantilla eliminada' });
@@ -272,7 +286,7 @@ export class ContractTemplateController {
     try {
       requireAdmin(req);
 
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const templates = await loadTemplates();
       if (!templates.find((t) => t.id === id)) throw new NotFoundError('Plantilla', id);
 
@@ -297,7 +311,7 @@ export class ContractTemplateController {
     try {
       requireAdmin(req);
 
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const repo = serviceContainer.systemSettingRepository;
       const logoPath = await repo.get(`${SETTING_LOGO_PREFIX}${id}`);
 
@@ -317,7 +331,7 @@ export class ContractTemplateController {
     try {
       if (!req.user) throw new AuthenticationError('No autorizado');
 
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const repo = serviceContainer.systemSettingRepository;
       const logoPath = await repo.get(`${SETTING_LOGO_PREFIX}${id}`);
 
@@ -334,12 +348,77 @@ export class ContractTemplateController {
     }
   }
 
+  // POST /api/contract-templates/:id/docx
+  static async uploadDocx(req: Request, res: Response, next: NextFunction) {
+    try {
+      requireAdmin(req);
+
+      const { id } = req.params as Record<string, string>;
+      const templates = await loadTemplates();
+      if (!templates.find((t) => t.id === id)) throw new NotFoundError('Plantilla', id);
+
+      if (!req.file) {
+        return res.status(400).json({ message: 'No se recibió ningún fichero .docx' });
+      }
+
+      await serviceContainer.systemSettingRepository.set(
+        `${SETTING_DOCX_PREFIX}${id}`,
+        req.file.path
+      );
+
+      res.json({ tieneDocx: true });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // DELETE /api/contract-templates/:id/docx
+  static async deleteDocx(req: Request, res: Response, next: NextFunction) {
+    try {
+      requireAdmin(req);
+
+      const { id } = req.params as Record<string, string>;
+      const repo = serviceContainer.systemSettingRepository;
+      const docxPath = await repo.get(`${SETTING_DOCX_PREFIX}${id}`);
+
+      if (docxPath && fs.existsSync(docxPath)) {
+        fs.unlinkSync(docxPath);
+      }
+      await repo.set(`${SETTING_DOCX_PREFIX}${id}`, '');
+
+      res.json({ message: 'Plantilla Word eliminada', tieneDocx: false });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // GET /api/contract-templates/:id/docx
+  static async downloadDocx(req: Request, res: Response, next: NextFunction) {
+    try {
+      requireAdmin(req);
+
+      const { id } = req.params as Record<string, string>;
+      const repo = serviceContainer.systemSettingRepository;
+      const docxPath = await repo.get(`${SETTING_DOCX_PREFIX}${id}`);
+
+      if (!docxPath || !fs.existsSync(docxPath)) {
+        return res.status(404).json({ message: 'No hay plantilla Word para esta plantilla' });
+      }
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="template-${id}.docx"`);
+      fs.createReadStream(docxPath).pipe(res);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // POST /api/contract-templates/:id/preview-pdf
   static async previewPdf(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.user) throw new AuthenticationError('No autorizado');
 
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const { client, items, comercial } = req.body as PreviewContractData;
 
       const pdfBuffer = await serviceContainer.generateAndSendContractUseCase.generatePreviewPdf(
@@ -358,8 +437,9 @@ export class ContractTemplateController {
   /**
    * Carga una plantilla por ID para generación de PDF.
    * Si templateId no se especifica o no existe, devuelve la plantilla por defecto.
+   * Incluye docxPath interno (no se expone al cliente, solo para generación interna).
    */
-  static async loadForPdf(templateId?: string): Promise<ContractConfig> {
+  static async loadForPdf(templateId?: string): Promise<ContractConfig & { docxPath: string | null }> {
     const templates = await loadTemplates();
     const repo = serviceContainer.systemSettingRepository;
 
@@ -372,13 +452,15 @@ export class ContractTemplateController {
     }
 
     if (!template) {
-      return { ...DEFAULT_CONTRACT_CONFIG };
+      return { ...DEFAULT_CONTRACT_CONFIG, docxPath: null };
     }
 
     const logoPath = await repo.get(`${SETTING_LOGO_PREFIX}${template.id}`);
+    const docxPath = await repo.get(`${SETTING_DOCX_PREFIX}${template.id}`);
     return {
       ...template,
       logoPath: logoPath || null,
+      docxPath: docxPath || null,
     };
   }
 }

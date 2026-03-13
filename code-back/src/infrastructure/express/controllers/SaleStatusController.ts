@@ -32,7 +32,7 @@ export class SaleStatusController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const status = await serviceContainer.updateSaleStatusUseCase.execute(
         { ...req.body, id },
         currentUser
@@ -61,7 +61,7 @@ export class SaleStatusController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       await serviceContainer.deleteSaleStatusUseCase.execute(id, currentUser);
       res.status(200).json({ message: 'Estado de venta eliminado correctamente' });
     } catch (error) {

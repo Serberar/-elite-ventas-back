@@ -41,7 +41,7 @@ export class UserController {
 
   static async delete(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       await serviceContainer.deleteUserUseCase.execute(id);
       res.status(200).json({ message: 'Usuario eliminado correctamente' });
     } catch (error: unknown) {
@@ -53,7 +53,7 @@ export class UserController {
 
   static async update(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const { id } = req.params as Record<string, string>;
       const updateData = req.body;
       const user = await serviceContainer.updateUserUseCase.execute(id, updateData);
       res.status(200).json({ user, message: 'Usuario actualizado correctamente' });
