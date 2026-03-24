@@ -12,6 +12,7 @@ describe('DownloadRecordingUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockRecording = new Recording(
@@ -52,7 +53,7 @@ describe('DownloadRecordingUseCase', () => {
     });
 
     it('should work with coordinador role', async () => {
-      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C' };
+      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C', empresaId: '00000000-0000-0000-0000-000000000001' };
       mockRecordingRepo.findById.mockResolvedValue(mockRecording);
 
       const result = await useCase.execute('rec-1', coordinadorUser);
@@ -60,8 +61,8 @@ describe('DownloadRecordingUseCase', () => {
       expect(result).toEqual(mockRecording);
     });
 
-    it('should work with verificador role', async () => {
-      const verificadorUser: CurrentUser = { id: 'u3', role: 'verificador', firstName: 'V' };
+    it('should work with coordinador role', async () => {
+      const verificadorUser: CurrentUser = { id: 'u3', role: 'coordinador', firstName: 'V', empresaId: '00000000-0000-0000-0000-000000000001' };
       mockRecordingRepo.findById.mockResolvedValue(mockRecording);
 
       const result = await useCase.execute('rec-1', verificadorUser);
@@ -70,7 +71,7 @@ describe('DownloadRecordingUseCase', () => {
     });
 
     it('should throw AuthorizationError for comercial role', async () => {
-      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com' };
+      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
 
       await expect(useCase.execute('rec-1', comercialUser)).rejects.toThrow(AuthorizationError);
       expect(mockRecordingRepo.findById).not.toHaveBeenCalled();

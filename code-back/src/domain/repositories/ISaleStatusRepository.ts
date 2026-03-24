@@ -3,9 +3,9 @@ import { SaleStatus } from '@domain/entities/SaleStatus';
 export interface ISaleStatusRepository {
   findById(id: string): Promise<SaleStatus | null>;
 
-  list(): Promise<SaleStatus[]>;
+  list(empresaId: string): Promise<SaleStatus[]>;
 
-  findInitialStatus(): Promise<SaleStatus | null>;
+  findInitialStatus(empresaId: string): Promise<SaleStatus | null>;
 
   create(data: {
     name: string;
@@ -13,6 +13,7 @@ export interface ISaleStatusRepository {
     color?: string | null;
     isFinal?: boolean;
     isCancelled?: boolean;
+    empresaId: string;
   }): Promise<SaleStatus>;
 
   update(

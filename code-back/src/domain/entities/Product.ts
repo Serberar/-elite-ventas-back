@@ -14,7 +14,8 @@ export class Product {
     public readonly periodo: string | null = null,
     public readonly precioBase: number | null = null,
     public readonly precioConsumo: number | null = null,
-    public readonly unidadConsumo: string | null = null
+    public readonly unidadConsumo: string | null = null,
+    public readonly empresaId: string = ''
   ) {}
 
   static fromPrisma(data: {
@@ -31,6 +32,7 @@ export class Product {
     precioBase?: Decimal | number | null;
     precioConsumo?: Decimal | number | null;
     unidadConsumo?: string | null;
+    empresaId: string;
   }): Product {
     return new Product(
       data.id,
@@ -45,7 +47,8 @@ export class Product {
       data.periodo ?? null,
       data.precioBase != null ? Number(data.precioBase) : null,
       data.precioConsumo != null ? Number(data.precioConsumo) : null,
-      data.unidadConsumo ?? null
+      data.unidadConsumo ?? null,
+      data.empresaId
     );
   }
 
@@ -64,6 +67,7 @@ export class Product {
       precioBase: this.precioBase,
       precioConsumo: this.precioConsumo,
       unidadConsumo: this.unidadConsumo,
+      empresaId: this.empresaId,
     };
   }
 }

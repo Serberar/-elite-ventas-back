@@ -12,9 +12,10 @@ describe('UpdateSaleStatusUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Test',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
-  const existingStatus = new SaleStatus('status-1', 'Existing Status', 1, '#000000', false, false, false);
+  const existingStatus = new SaleStatus('status-1', 'Existing Status', 1, '#000000', false, false, false, '00000000-0000-0000-0000-000000000001');
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -94,7 +95,7 @@ describe('UpdateSaleStatusUseCase', () => {
     });
 
     it('should throw ValidationError when trying to update a system status', async () => {
-      const systemStatus = new SaleStatus('status-sys', 'System Status', 1, null, false, false, true);
+      const systemStatus = new SaleStatus('status-sys', 'System Status', 1, null, false, false, true, '00000000-0000-0000-0000-000000000001');
       mockRepository.findById.mockResolvedValue(systemStatus);
 
       const dto = { id: 'status-sys', name: 'New Name', isFinal: false };
@@ -105,30 +106,36 @@ describe('UpdateSaleStatusUseCase', () => {
       );
     });
 
-    it('should throw AuthorizationError for non-admin roles', async () => {
+    it('should work with coordinador role', async () => {
       const coordinadorUser: CurrentUser = {
         id: 'user-456',
         role: 'coordinador',
         firstName: 'Coordinador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
-      const dto = { id: 'status-1', name: 'Updated Status', isFinal: false };
+      const dto = { id: 'status-1', name: 'Updated Status', color: '#FF0000', isFinal: false };
+      const mockStatus = new SaleStatus('status-1', 'Updated Status', 1, '#FF0000', false, false, false);
+      mockRepository.update.mockResolvedValue(mockStatus);
 
-      await expect(useCase.execute(dto, coordinadorUser)).rejects.toThrow(AuthorizationError);
-      expect(mockRepository.update).not.toHaveBeenCalled();
+      const result = await useCase.execute(dto, coordinadorUser);
+      expect(result).toEqual(mockStatus);
     });
 
-    it('should throw AuthorizationError for verificador role', async () => {
+    it('should also work with coordinador role (duplicate check)', async () => {
       const verificadorUser: CurrentUser = {
         id: 'user-789',
-        role: 'verificador',
+        role: 'coordinador',
         firstName: 'Verificador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
-      const dto = { id: 'status-1', name: 'Updated Status', isFinal: false };
+      const dto = { id: 'status-1', name: 'Updated Status', color: '#FF0000', isFinal: false };
+      const mockStatus = new SaleStatus('status-1', 'Updated Status', 1, '#FF0000', false, false, false);
+      mockRepository.update.mockResolvedValue(mockStatus);
 
-      await expect(useCase.execute(dto, verificadorUser)).rejects.toThrow(AuthorizationError);
-      expect(mockRepository.update).not.toHaveBeenCalled();
+      const result = await useCase.execute(dto, verificadorUser);
+      expect(result).toEqual(mockStatus);
     });
 
     it('should throw AuthorizationError for comercial role', async () => {
@@ -136,6 +143,7 @@ describe('UpdateSaleStatusUseCase', () => {
         id: 'user-999',
         role: 'comercial',
         firstName: 'Comercial',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       const dto = { id: 'status-1', name: 'Updated Status', isFinal: false };

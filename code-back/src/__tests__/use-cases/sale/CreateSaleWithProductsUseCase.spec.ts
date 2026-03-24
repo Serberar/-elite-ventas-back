@@ -23,6 +23,7 @@ describe('CreateSaleWithProductsUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const initialStatus = new SaleStatus('status-initial', 'Inicial', 1, '#FFF', false, false, true);
@@ -33,7 +34,7 @@ describe('CreateSaleWithProductsUseCase', () => {
 
   const mockCreatedSale = new Sale(
     'sale-new', 'client-1', 'status-initial', 199.98, null, null,
-    { id: 'client-1', firstName: 'John' }, null, null,
+    { id: 'client-1', firstName: 'John', empresaId: '00000000-0000-0000-0000-000000000001' }, null, null,
     new Date(), new Date(), null
   );
 
@@ -146,7 +147,7 @@ describe('CreateSaleWithProductsUseCase', () => {
 
     it('should create sale with items without productId', async () => {
       const dtoWithoutProductId = {
-        client: { id: 'client-1', firstName: 'John' },
+        client: { id: 'client-1', firstName: 'John', empresaId: '00000000-0000-0000-0000-000000000001' },
         items: [{ name: 'Custom Service', price: 50, quantity: 1 }],
       };
       mockStatusRepo.findInitialStatus.mockResolvedValue(initialStatus);
@@ -159,7 +160,7 @@ describe('CreateSaleWithProductsUseCase', () => {
     });
 
     it('should work with coordinador role', async () => {
-      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C' };
+      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C', empresaId: '00000000-0000-0000-0000-000000000001' };
       mockStatusRepo.findInitialStatus.mockResolvedValue(initialStatus);
       mockProductRepo.findById.mockResolvedValue(mockProduct);
       mockSaleRepo.createWithItemsTransaction.mockResolvedValue(mockCreatedSale);
@@ -170,7 +171,7 @@ describe('CreateSaleWithProductsUseCase', () => {
     });
 
     it('should work with comercial role', async () => {
-      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com' };
+      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
       mockStatusRepo.findInitialStatus.mockResolvedValue(initialStatus);
       mockProductRepo.findById.mockResolvedValue(mockProduct);
       mockSaleRepo.createWithItemsTransaction.mockResolvedValue(mockCreatedSale);
@@ -181,7 +182,7 @@ describe('CreateSaleWithProductsUseCase', () => {
     });
 
     it('should throw AuthorizationError for unknown role', async () => {
-      const unknownUser: CurrentUser = { id: 'u5', role: 'unknown_role' as any, firstName: 'U' };
+      const unknownUser: CurrentUser = { id: 'u5', role: 'unknown_role' as any, firstName: 'U', empresaId: '00000000-0000-0000-0000-000000000001' };
 
       await expect(useCase.execute(validDto as any, unknownUser)).rejects.toThrow(AuthorizationError);
     });

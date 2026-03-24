@@ -9,12 +9,12 @@ export class AllowedIpPrismaRepository implements IAllowedIpRepository {
     cacheService.invalidatePattern('allowed_ips');
   }
 
-  async list(): Promise<AllowedIp[]> {
+  async list(empresaId: string): Promise<AllowedIp[]> {
     return cacheService.getOrSet(
-      CACHE_KEYS.ALLOWED_IPS,
+      `${CACHE_KEYS.ALLOWED_IPS}:${empresaId}`,
       async () => {
         const rows = await dbCircuitBreaker.execute(() =>
-          prisma.allowedIp.findMany({ orderBy: { createdAt: 'desc' } })
+          prisma.allowedIp.findMany({ where: { empresaId }, orderBy: { createdAt: 'desc' } })
         );
         return rows.map((r) => AllowedIp.fromPrisma(r));
       },
@@ -22,12 +22,16 @@ export class AllowedIpPrismaRepository implements IAllowedIpRepository {
     );
   }
 
-  async listIpStrings(): Promise<string[]> {
+  async listIpStrings(empresaId?: string): Promise<string[]> {
+    const cacheKey = empresaId ? `${CACHE_KEYS.ALLOWED_IPS_STRINGS}:${empresaId}` : CACHE_KEYS.ALLOWED_IPS_STRINGS;
     return cacheService.getOrSet(
-      CACHE_KEYS.ALLOWED_IPS_STRINGS,
+      cacheKey,
       async () => {
         const rows = await dbCircuitBreaker.execute(() =>
-          prisma.allowedIp.findMany({ select: { ip: true } })
+          prisma.allowedIp.findMany({
+            where: empresaId ? { empresaId } : undefined,
+            select: { ip: true },
+          })
         );
         return rows.map((r) => r.ip.trim());
       },
@@ -35,12 +39,13 @@ export class AllowedIpPrismaRepository implements IAllowedIpRepository {
     );
   }
 
-  async create(data: { ip: string; description?: string | null }): Promise<AllowedIp> {
+  async create(data: { ip: string; description?: string | null; empresaId: string }): Promise<AllowedIp> {
     const row = await dbCircuitBreaker.execute(() =>
       prisma.allowedIp.create({
         data: {
           ip: data.ip.trim(),
           description: data.description ?? null,
+          empresaId: data.empresaId,
         },
       })
     );
@@ -49,9 +54,9 @@ export class AllowedIpPrismaRepository implements IAllowedIpRepository {
     return AllowedIp.fromPrisma(row);
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, empresaId: string): Promise<void> {
     await dbCircuitBreaker.execute(() =>
-      prisma.allowedIp.delete({ where: { id } })
+      prisma.allowedIp.delete({ where: { id, empresaId } })
     );
     this.invalidateCache();
   }

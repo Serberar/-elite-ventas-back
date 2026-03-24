@@ -15,12 +15,13 @@ export class ProductPrismaRepository implements IProductRepository {
     cacheService.invalidatePattern('products');
   }
 
-  async findAll(): Promise<Product[]> {
+  async findAll(empresaId: string): Promise<Product[]> {
     return cacheService.getOrSet(
-      CACHE_KEYS.PRODUCTS,
+      `${CACHE_KEYS.PRODUCTS}:${empresaId}`,
       async () => {
         const rows = await dbCircuitBreaker.execute(() =>
           prisma.product.findMany({
+            where: { empresaId },
             orderBy: { name: 'asc' },
           })
         );
@@ -30,15 +31,16 @@ export class ProductPrismaRepository implements IProductRepository {
     );
   }
 
-  async findAllPaginated(pagination: PaginationOptions): Promise<PaginatedResponse<Product>> {
+  async findAllPaginated(pagination: PaginationOptions, empresaId: string): Promise<PaginatedResponse<Product>> {
     const [rows, total] = await dbCircuitBreaker.execute(() =>
       Promise.all([
         prisma.product.findMany({
+          where: { empresaId },
           orderBy: { name: 'asc' },
           skip: calculateOffset(pagination.page, pagination.limit),
           take: pagination.limit,
         }),
-        prisma.product.count(),
+        prisma.product.count({ where: { empresaId } }),
       ])
     );
 
@@ -58,17 +60,17 @@ export class ProductPrismaRepository implements IProductRepository {
     return row ? Product.fromPrisma(row) : null;
   }
 
-  async findBySKU(sku: string): Promise<Product | null> {
+  async findBySKU(sku: string, empresaId: string): Promise<Product | null> {
     const row = await dbCircuitBreaker.execute(() =>
-      prisma.product.findUnique({
-        where: { sku },
+      prisma.product.findFirst({
+        where: { sku, empresaId },
       })
     );
 
     return row ? Product.fromPrisma(row) : null;
   }
 
-  async create(data: Partial<Product>): Promise<Product> {
+  async create(data: Partial<Product> & { empresaId: string }): Promise<Product> {
     const row = await dbCircuitBreaker.execute(() =>
       prisma.product.create({
         data: {
@@ -82,6 +84,7 @@ export class ProductPrismaRepository implements IProductRepository {
           precioBase: data.precioBase ?? null,
           precioConsumo: data.precioConsumo ?? null,
           unidadConsumo: data.unidadConsumo ?? null,
+          empresaId: data.empresaId,
         },
       })
     );

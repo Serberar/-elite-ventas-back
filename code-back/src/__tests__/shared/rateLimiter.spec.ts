@@ -2,11 +2,16 @@ import { Request, Response, NextFunction } from 'express';
 
 // Mock must be before imports — jest.mock is hoisted
 jest.mock('express-rate-limit', () => {
-  return jest.fn().mockImplementation((options) => {
+  const mockRateLimit = jest.fn().mockImplementation((options) => {
     const middleware = jest.fn();
     (middleware as any).__options = options;
     return middleware;
   });
+  return {
+    __esModule: true,
+    default: mockRateLimit,
+    ipKeyGenerator: (ip: string) => ip,
+  };
 });
 
 // Top-level import: rateLimit will be called during module init,

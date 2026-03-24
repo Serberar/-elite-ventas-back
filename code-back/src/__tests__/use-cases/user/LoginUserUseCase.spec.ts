@@ -25,6 +25,7 @@ describe('LoginUserUseCase', () => {
     'testuser',
     '$2a$10$hashedpassword',
     'administrador',
+    '00000000-0000-0000-0000-000000000001',
     true,
     0,
     new Date('2024-01-01'),
@@ -133,7 +134,7 @@ describe('LoginUserUseCase', () => {
       // Arrange
       const inactiveUser = new User(
         '123', 'Test', 'User', 'testuser', '$2a$10$hashedpassword', 'administrador',
-        false, // active = false
+        '00000000-0000-0000-0000-000000000001', false, // active = false
         0, new Date('2024-01-01'), null
       );
       const loginData = { username: 'testuser', password: 'anypassword' };
@@ -152,7 +153,7 @@ describe('LoginUserUseCase', () => {
       // Arrange
       const lockedUser = new User(
         '123', 'Test', 'User', 'testuser', '$2a$10$hashedpassword', 'administrador',
-        true, // active
+        '00000000-0000-0000-0000-000000000001', true, // active
         20,   // failedLoginAttempts >= MAX
         new Date('2024-01-01'), null
       );
@@ -172,7 +173,7 @@ describe('LoginUserUseCase', () => {
       // Arrange
       const overLockedUser = new User(
         '123', 'Test', 'User', 'testuser', '$2a$10$hashedpassword', 'administrador',
-        true, 25, new Date('2024-01-01'), null
+        '00000000-0000-0000-0000-000000000001', true, 25, new Date('2024-01-01'), null
       );
       mockUserRepository.findByUsername.mockResolvedValue(overLockedUser);
 
@@ -185,7 +186,7 @@ describe('LoginUserUseCase', () => {
       // Arrange
       const userWith5Attempts = new User(
         '123', 'Test', 'User', 'testuser', '$2a$10$hashedpassword', 'administrador',
-        true, 5, new Date('2024-01-01'), null
+        '00000000-0000-0000-0000-000000000001', true, 5, new Date('2024-01-01'), null
       );
       const loginData = { username: 'testuser', password: 'wrongpassword' };
 
@@ -201,7 +202,7 @@ describe('LoginUserUseCase', () => {
       // Arrange
       const userWith19Attempts = new User(
         '123', 'Test', 'User', 'testuser', '$2a$10$hashedpassword', 'administrador',
-        true, 19, new Date('2024-01-01'), null
+        '00000000-0000-0000-0000-000000000001', true, 19, new Date('2024-01-01'), null
       );
       const loginData = { username: 'testuser', password: 'wrongpassword' };
 
@@ -219,7 +220,7 @@ describe('LoginUserUseCase', () => {
       // Arrange
       const userWithAttempts = new User(
         '123', 'Test', 'User', 'testuser', '$2a$10$hashedpassword', 'administrador',
-        true, 3, new Date('2024-01-01'), null
+        '00000000-0000-0000-0000-000000000001', true, 3, new Date('2024-01-01'), null
       );
       const loginData = { username: 'testuser', password: 'correctpassword' };
 
@@ -310,7 +311,7 @@ describe('LoginUserUseCase', () => {
       // Assert - Access Token
       expect(jwt.sign).toHaveBeenNthCalledWith(
         1,
-        { id: mockUser.id, role: mockUser.role, firstName: mockUser.firstName, lastName: mockUser.lastName },
+        { id: mockUser.id, role: mockUser.role, firstName: mockUser.firstName, lastName: mockUser.lastName, empresaId: mockUser.empresaId },
         'test-secret',
         { expiresIn: '15m' }
       );

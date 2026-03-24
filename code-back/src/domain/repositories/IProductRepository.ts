@@ -2,11 +2,11 @@ import { Product } from '@domain/entities/Product';
 import { PaginationOptions, PaginatedResponse } from '@domain/types';
 
 export interface IProductRepository {
-  findAll(): Promise<Product[]>;
+  findAll(empresaId: string): Promise<Product[]>;
   /** Listado paginado de productos */
-  findAllPaginated(pagination: PaginationOptions): Promise<PaginatedResponse<Product>>;
+  findAllPaginated(pagination: PaginationOptions, empresaId: string): Promise<PaginatedResponse<Product>>;
   findById(id: string): Promise<Product | null>;
-  findBySKU(sku: string): Promise<Product | null>;
+  findBySKU(sku: string, empresaId: string): Promise<Product | null>;
 
   create(data: {
     name: string;
@@ -18,6 +18,7 @@ export interface IProductRepository {
     precioBase?: number | null;
     precioConsumo?: number | null;
     unidadConsumo?: string | null;
+    empresaId: string;
   }): Promise<Product>;
 
   update(

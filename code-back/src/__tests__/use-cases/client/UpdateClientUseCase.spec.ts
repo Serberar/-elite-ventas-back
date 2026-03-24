@@ -18,12 +18,14 @@ describe('UpdateClientUseCase', () => {
       getById: jest.fn(),
       update: jest.fn(),
       getByPhoneOrDNI: jest.fn(),
+      delete: jest.fn(),
     } as jest.Mocked<IClientRepository>;
 
     mockCurrentUser = {
       id: 'user-1',
       firstName: 'testuser',
       role: 'administrador',
+      empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     existingClient = new Client(
@@ -40,7 +42,8 @@ describe('UpdateClientUseCase', () => {
       'Autorizado Original',
       'Empresa Original SL',
       new Date('2023-01-01'),
-      new Date('2023-01-01')
+      new Date('2023-01-01'),
+      '00000000-0000-0000-0000-000000000001'
     );
 
     useCase = new UpdateClientUseCase(mockRepository);
@@ -162,6 +165,7 @@ describe('UpdateClientUseCase', () => {
     const updateData = {
       id: 'client-not-found',
       firstName: 'Juan Carlos',
+    empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     mockRepository.getById.mockResolvedValue(null);
@@ -179,6 +183,7 @@ describe('UpdateClientUseCase', () => {
     const updateData = {
       id: 'client-1',
       firstName: 'Juan Carlos',
+    empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     (checkRolePermission as jest.Mock).mockImplementation(() => {
@@ -197,6 +202,7 @@ describe('UpdateClientUseCase', () => {
     const updateData = {
       id: 'client-1',
       firstName: 'Juan Carlos',
+    empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     mockRepository.getById.mockResolvedValue(existingClient);

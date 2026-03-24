@@ -13,6 +13,6 @@ export class ListAllowedIpsUseCase {
       'listar IPs permitidas'
     );
 
-    return await this.repo.list();
+    return await this.repo.list(currentUser.empresaId);
   }
 }

@@ -9,6 +9,7 @@ export interface UserDTO {
   role: string;
   active: boolean;
   failedLoginAttempts: number;
+  empresaId: string;
   createdAt: string | null;
   lastLoginAt: string | null;
 }
@@ -16,10 +17,11 @@ export interface UserDTO {
 export class GetAllUsersUseCase {
   constructor(private userRepository: IUserRepository) {}
 
-  async execute(): Promise<UserDTO[]> {
+  async execute(empresaId: string, role: string): Promise<UserDTO[]> {
     logger.info('Obteniendo lista de usuarios');
 
-    const users = await this.userRepository.findAll();
+    // Cada empresa ve solo sus propios usuarios
+    const users = await this.userRepository.findAll(empresaId);
 
     const usersDTO: UserDTO[] = users.map((user) => ({
       id: user.id,
@@ -29,6 +31,7 @@ export class GetAllUsersUseCase {
       role: user.role,
       active: user.active,
       failedLoginAttempts: user.failedLoginAttempts,
+      empresaId: user.empresaId,
       createdAt: user.createdAt.toISOString(),
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
     }));

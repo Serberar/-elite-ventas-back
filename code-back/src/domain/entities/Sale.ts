@@ -4,7 +4,7 @@ type NotesArray = Record<string, unknown>[];
 export class Sale {
   constructor(
     public readonly id: string,
-    public readonly clientId: string,
+    public readonly clientId: string | null,
     public readonly statusId: string,
     public readonly totalAmount: number,
     public readonly notes: NotesArray | null,
@@ -14,12 +14,13 @@ export class Sale {
     public readonly comercial: string | null,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
-    public readonly closedAt: Date | null
+    public readonly closedAt: Date | null,
+    public readonly empresaId: string = ''
   ) {}
 
   static fromPrisma(data: {
     id: string;
-    clientId: string;
+    clientId: string | null;
     statusId: string;
     totalAmount: unknown;
     notes: unknown;
@@ -30,6 +31,7 @@ export class Sale {
     createdAt: Date;
     updatedAt: Date;
     closedAt: Date | null;
+    empresaId: string;
   }): Sale {
     return new Sale(
       data.id,
@@ -43,7 +45,8 @@ export class Sale {
       data.comercial ?? null,
       data.createdAt,
       data.updatedAt,
-      data.closedAt ?? null
+      data.closedAt ?? null,
+      data.empresaId
     );
   }
 
@@ -61,6 +64,7 @@ export class Sale {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       closedAt: this.closedAt,
+      empresaId: this.empresaId,
     };
   }
 }

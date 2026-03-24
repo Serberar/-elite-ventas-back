@@ -6,7 +6,7 @@ import { rolePermissions } from '@application/shared/authorization/rolePermissio
 import logger from '@infrastructure/observability/logger/logger';
 import { ToggleProductActiveDTO } from '@infrastructure/express/validation/productSchemas';
 import { businessProductsToggled } from '@infrastructure/observability/metrics/prometheusMetrics';
-import { NotFoundError } from '@application/shared/AppError';
+import { NotFoundError, AuthorizationError } from '@application/shared/AppError';
 
 export class ToggleProductActiveUseCase {
   constructor(private readonly repository: IProductRepository) {}
@@ -22,6 +22,10 @@ export class ToggleProductActiveUseCase {
 
     const existing = await this.repository.findById(data.id);
     if (!existing) throw new NotFoundError('Producto', data.id);
+
+    if (existing.empresaId !== currentUser.empresaId) {
+      throw new AuthorizationError('No tienes permiso para modificar este producto');
+    }
 
     const toggled = await this.repository.toggleActive(data.id);
 

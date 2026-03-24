@@ -125,7 +125,7 @@ export class ClientController {
       const { password } = req.body as DeleteClientBody;
 
       logger.info(`Solicitud de eliminación de cliente ${id} por usuario ${currentUser.id}`);
-      await serviceContainer.deleteClientUseCase.execute(id, password);
+      await serviceContainer.deleteClientUseCase.execute(id, password, currentUser);
 
       res.status(200).json({ message: 'Cliente eliminado correctamente' });
     } catch (error) {

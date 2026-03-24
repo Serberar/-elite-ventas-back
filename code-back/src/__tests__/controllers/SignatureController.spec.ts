@@ -12,6 +12,7 @@ jest.mock('@infrastructure/container/ServiceContainer', () => ({
     getSignatureStatusUseCase: { execute: jest.fn() },
     cancelSignatureRequestUseCase: { execute: jest.fn() },
     handleSignatureWebhookUseCase: { execute: jest.fn() },
+    signatureRequestRepository: { findByProviderDocumentId: jest.fn().mockResolvedValue(null) },
   },
 }));
 
@@ -22,10 +23,11 @@ describe('SignatureController', () => {
   let statusMock: jest.Mock;
   let jsonMock: jest.Mock;
 
-  const currentUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin' };
+  const currentUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin', empresaId: '00000000-0000-0000-0000-000000000001' };
 
   const mockSignatureRequest = new SignatureRequest(
-    'sig-1', 'sale-123', 'pending', 'john@example.com',
+    'sig-1', 'sale-123', 'contract',
+    'pending', 'john@example.com',
     'doc-provider-abc', null, null,
     new Date('2024-01-15'), null, null,
     new Date('2024-01-15'), new Date('2024-01-15')
@@ -235,7 +237,8 @@ describe('SignatureController', () => {
   describe('handleWebhook', () => {
     it('should return 200 with processed signature on signed event', async () => {
       const signedSignature = new SignatureRequest(
-        'sig-1', 'sale-123', 'signed', 'john@example.com',
+        'sig-1', 'sale-123', 'contract',
+    'signed', 'john@example.com',
         'doc-abc', 'https://signed.pdf', null,
         new Date(), new Date(), null,
         new Date(), new Date()
@@ -256,7 +259,7 @@ describe('SignatureController', () => {
       expect(serviceContainer.handleSignatureWebhookUseCase.execute).toHaveBeenCalledWith({
         providerDocumentId: 'doc-abc',
         event: 'signed',
-        signedUrl: 'https://signed.pdf',
+        signedUrl: undefined,
         rejectionReason: null,
       });
       expect(statusMock).toHaveBeenCalledWith(200);
@@ -269,7 +272,8 @@ describe('SignatureController', () => {
 
     it('should return 200 on rejection event', async () => {
       const rejectedSignature = new SignatureRequest(
-        'sig-1', 'sale-123', 'rejected', 'john@example.com',
+        'sig-1', 'sale-123', 'contract',
+    'rejected', 'john@example.com',
         'doc-abc', null, 'No estoy de acuerdo',
         new Date(), null, new Date(),
         new Date(), new Date()

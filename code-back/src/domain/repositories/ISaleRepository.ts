@@ -12,11 +12,10 @@ export interface ISaleRepository {
     totalAmount?: number;
     notes?: Prisma.JsonValue | Prisma.JsonNullValueInput;
     metadata?: Prisma.JsonValue | Prisma.JsonNullValueInput;
-
-    // 🔥 NUEVOS CAMPOS PARA SNAPSHOTS
     clientSnapshot: Prisma.JsonValue | Prisma.JsonNullValueInput;
     addressSnapshot: Prisma.JsonValue | Prisma.JsonNullValueInput;
     comercial?: string | null;
+    empresaId: string;
   }): Promise<Sale>;
 
   findById(id: string): Promise<Sale | null>;
@@ -36,6 +35,7 @@ export interface ISaleRepository {
     from?: Date;
     to?: Date;
     comercial?: string;
+    empresaId?: string;
   }): Promise<Sale[]>;
 
   /** Lista ventas con todas las relaciones en UNA sola query (evita N+1) */
@@ -45,6 +45,7 @@ export interface ISaleRepository {
     from?: Date;
     to?: Date;
     comercial?: string;
+    empresaId?: string;
   }): Promise<
     Array<{
       sale: Sale;
@@ -64,6 +65,7 @@ export interface ISaleRepository {
       from?: Date;
       to?: Date;
       comercial?: string;
+      empresaId?: string;
     },
     pagination: PaginationOptions
   ): Promise<PaginatedResponse<Sale>>;
@@ -76,6 +78,7 @@ export interface ISaleRepository {
       from?: Date;
       to?: Date;
       comercial?: string;
+      empresaId?: string;
     },
     pagination: PaginationOptions
   ): Promise<
@@ -144,7 +147,7 @@ export interface ISaleRepository {
     role: string;
   }): Promise<SaleAssignment>;
 
-  getDistinctComerciales(): Promise<string[]>;
+  getDistinctComerciales(empresaId: string): Promise<string[]>;
 
   /**
    * Crea una venta con items en una sola transacción atómica.
@@ -158,6 +161,7 @@ export interface ISaleRepository {
     clientSnapshot: Prisma.JsonValue | Prisma.JsonNullValueInput;
     addressSnapshot: Prisma.JsonValue | Prisma.JsonNullValueInput;
     comercial?: string | null;
+    empresaId: string;
     items: Array<{
       productId?: string | null;
       nameSnapshot: string;

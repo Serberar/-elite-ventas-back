@@ -17,12 +17,14 @@ describe('GetClientUseCase', () => {
       getById: jest.fn(),
       update: jest.fn(),
       getByPhoneOrDNI: jest.fn(),
+      delete: jest.fn(),
     } as jest.Mocked<IClientRepository>;
 
     mockCurrentUser = {
       id: 'user-1',
       firstName: 'testuser',
       role: 'comercial',
+      empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     useCase = new GetClientUseCase(mockRepository);
@@ -59,7 +61,7 @@ describe('GetClientUseCase', () => {
       expect.any(Array),
       'descargar clientes por teléfono o DNI'
     );
-    expect(mockRepository.getByPhoneOrDNI).toHaveBeenCalledWith('12345678A');
+    expect(mockRepository.getByPhoneOrDNI).toHaveBeenCalledWith('12345678A', '00000000-0000-0000-0000-000000000001');
     expect(result).toEqual(mockClients);
     expect(result).toHaveLength(1);
     expect(result[0].dni).toBe('12345678A');
@@ -106,7 +108,7 @@ describe('GetClientUseCase', () => {
 
     const result = await useCase.execute('987654321', mockCurrentUser);
 
-    expect(mockRepository.getByPhoneOrDNI).toHaveBeenCalledWith('987654321');
+    expect(mockRepository.getByPhoneOrDNI).toHaveBeenCalledWith('987654321', '00000000-0000-0000-0000-000000000001');
     expect(result).toEqual(mockClients);
     expect(result).toHaveLength(2);
     expect(result[0].phones).toContain('987654321');
@@ -119,7 +121,7 @@ describe('GetClientUseCase', () => {
 
     const result = await useCase.execute('99999999Z', mockCurrentUser);
 
-    expect(mockRepository.getByPhoneOrDNI).toHaveBeenCalledWith('99999999Z');
+    expect(mockRepository.getByPhoneOrDNI).toHaveBeenCalledWith('99999999Z', '00000000-0000-0000-0000-000000000001');
     expect(result).toEqual([]);
     expect(result).toHaveLength(0);
   });
@@ -153,6 +155,6 @@ describe('GetClientUseCase', () => {
       'Error de base de datos'
     );
 
-    expect(mockRepository.getByPhoneOrDNI).toHaveBeenCalledWith('12345678A');
+    expect(mockRepository.getByPhoneOrDNI).toHaveBeenCalledWith('12345678A', '00000000-0000-0000-0000-000000000001');
   });
 });

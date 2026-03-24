@@ -38,10 +38,10 @@ describe('SystemSettingPrismaRepository', () => {
         value: 'true',
       });
 
-      const result = await repository.get('ip_filter_enabled');
+      const result = await repository.get('ip_filter_enabled', '00000000-0000-0000-0000-000000000001');
 
       expect(prisma.systemSetting.findUnique).toHaveBeenCalledWith({
-        where: { key: 'ip_filter_enabled' },
+        where: { key_empresaId: { key: 'ip_filter_enabled', empresaId: '00000000-0000-0000-0000-000000000001' } },
       });
       expect(result).toBe('true');
     });
@@ -49,7 +49,7 @@ describe('SystemSettingPrismaRepository', () => {
     it('should return null when key does not exist', async () => {
       (prisma.systemSetting.findUnique as jest.Mock).mockResolvedValue(null);
 
-      const result = await repository.get('non_existent_key');
+      const result = await repository.get('non_existent_key', '00000000-0000-0000-0000-000000000001');
 
       expect(result).toBeNull();
     });
@@ -57,10 +57,10 @@ describe('SystemSettingPrismaRepository', () => {
     it('should use cache with prefixed key', async () => {
       (prisma.systemSetting.findUnique as jest.Mock).mockResolvedValue({ key: 'k', value: 'v' });
 
-      await repository.get('my_setting');
+      await repository.get('my_setting', '00000000-0000-0000-0000-000000000001');
 
       expect(cacheService.getOrSet).toHaveBeenCalledWith(
-        'system_setting:my_setting',
+        'system_setting:00000000-0000-0000-0000-000000000001:my_setting',
         expect.any(Function),
         30
       );
@@ -69,7 +69,7 @@ describe('SystemSettingPrismaRepository', () => {
     it('should propagate prisma errors', async () => {
       (prisma.systemSetting.findUnique as jest.Mock).mockRejectedValue(new Error('DB error'));
 
-      await expect(repository.get('any_key')).rejects.toThrow('DB error');
+      await expect(repository.get('any_key', '00000000-0000-0000-0000-000000000001')).rejects.toThrow('DB error');
     });
   });
 
@@ -77,29 +77,29 @@ describe('SystemSettingPrismaRepository', () => {
     it('should upsert the setting with key and value', async () => {
       (prisma.systemSetting.upsert as jest.Mock).mockResolvedValue(undefined);
 
-      await repository.set('ip_filter_enabled', 'true');
+      await repository.set('ip_filter_enabled', 'true', '00000000-0000-0000-0000-000000000001');
 
       expect(prisma.systemSetting.upsert).toHaveBeenCalledWith({
-        where: { key: 'ip_filter_enabled' },
+        where: { key_empresaId: { key: 'ip_filter_enabled', empresaId: '00000000-0000-0000-0000-000000000001' } },
         update: { value: 'true' },
-        create: { key: 'ip_filter_enabled', value: 'true' },
+        create: { key: 'ip_filter_enabled', empresaId: '00000000-0000-0000-0000-000000000001', value: 'true' },
       });
     });
 
     it('should invalidate cache for the specific key after setting', async () => {
       (prisma.systemSetting.upsert as jest.Mock).mockResolvedValue(undefined);
 
-      await repository.set('some_setting', 'value');
+      await repository.set('some_setting', 'value', '00000000-0000-0000-0000-000000000001');
 
       expect(cacheService.invalidatePattern).toHaveBeenCalledWith(
-        'system_setting:some_setting'
+        'system_setting:00000000-0000-0000-0000-000000000001:some_setting'
       );
     });
 
     it('should update existing key value on upsert', async () => {
       (prisma.systemSetting.upsert as jest.Mock).mockResolvedValue(undefined);
 
-      await repository.set('ip_filter_enabled', 'false');
+      await repository.set('ip_filter_enabled', 'false', '00000000-0000-0000-0000-000000000001');
 
       expect(prisma.systemSetting.upsert).toHaveBeenCalledWith(
         expect.objectContaining({ update: { value: 'false' } })
@@ -109,13 +109,13 @@ describe('SystemSettingPrismaRepository', () => {
     it('should resolve without error on success', async () => {
       (prisma.systemSetting.upsert as jest.Mock).mockResolvedValue(undefined);
 
-      await expect(repository.set('key', 'value')).resolves.toBeUndefined();
+      await expect(repository.set('key', 'value', '00000000-0000-0000-0000-000000000001')).resolves.toBeUndefined();
     });
 
     it('should propagate prisma errors', async () => {
       (prisma.systemSetting.upsert as jest.Mock).mockRejectedValue(new Error('DB error'));
 
-      await expect(repository.set('key', 'value')).rejects.toThrow('DB error');
+      await expect(repository.set('key', 'value', '00000000-0000-0000-0000-000000000001')).rejects.toThrow('DB error');
     });
   });
 
@@ -126,7 +126,7 @@ describe('SystemSettingPrismaRepository', () => {
         value: 'true',
       });
 
-      const result = await repository.getBool('ip_filter_enabled');
+      const result = await repository.getBool('ip_filter_enabled', 'empresa-1');
 
       expect(result).toBe(true);
     });
@@ -137,7 +137,7 @@ describe('SystemSettingPrismaRepository', () => {
         value: 'false',
       });
 
-      const result = await repository.getBool('ip_filter_enabled');
+      const result = await repository.getBool('ip_filter_enabled', 'empresa-1');
 
       expect(result).toBe(false);
     });
@@ -145,7 +145,7 @@ describe('SystemSettingPrismaRepository', () => {
     it('should return false when key does not exist (null value)', async () => {
       (prisma.systemSetting.findUnique as jest.Mock).mockResolvedValue(null);
 
-      const result = await repository.getBool('non_existent');
+      const result = await repository.getBool('non_existent', 'empresa-1');
 
       expect(result).toBe(false);
     });
@@ -156,7 +156,7 @@ describe('SystemSettingPrismaRepository', () => {
         value: '1',
       });
 
-      const result = await repository.getBool('some_flag');
+      const result = await repository.getBool('some_flag', 'empresa-1');
 
       expect(result).toBe(false);
     });
@@ -164,7 +164,7 @@ describe('SystemSettingPrismaRepository', () => {
     it('should propagate errors from get()', async () => {
       (prisma.systemSetting.findUnique as jest.Mock).mockRejectedValue(new Error('DB error'));
 
-      await expect(repository.getBool('key')).rejects.toThrow('DB error');
+      await expect(repository.getBool('key', 'empresa-1')).rejects.toThrow('DB error');
     });
   });
 });

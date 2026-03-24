@@ -45,7 +45,8 @@ export class CreateClientUseCase {
       data.authorized,
       data.businessName,
       new Date(), // createdAt
-      new Date() // lastModified
+      new Date(), // lastModified
+      currentUser.empresaId
     );
 
     await this.repository.create(client);

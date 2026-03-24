@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 enum Role {
@@ -12,6 +13,34 @@ enum Role {
   verificador   @map("verificador")
   coordinador   @map("coordinador")
   comercial     @map("comercial")
+}
+
+model Empresa {
+  id                 String   @id @default(uuid())
+  nombre             String
+  slug               String   @unique
+  activa             Boolean  @default(true)
+
+  // Personalización visual
+  logo               String?  // URL
+  colorPrimario      String?  // hex
+  colorSecundario    String?  // hex
+  colorNombreEmpresa String?  // hex — color del nombre en la barra de navegación (defecto blanco)
+
+  // Páginas visibles (claves: "buscador", "aplicaciones", "ventas"…)
+  paginasHabilitadas String[]
+  paginaInicio        String?  // clave de la página de inicio (ej: "buscador", "ventas"…)
+
+  createdAt          DateTime @default(now())
+
+  // Relaciones
+  users         User[]
+  clients       Client[]
+  products      Product[]
+  sales         Sale[]
+  saleStatuses  SaleStatus[]
+  allowedIps    AllowedIp[]
+  settings      SystemSetting[]
 }
 
 model User {
@@ -28,10 +57,15 @@ model User {
   refreshToken          String?
   refreshTokenExpiresAt DateTime?
 
+  empresaId             String
+  empresa               Empresa   @relation(fields: [empresaId], references: [id])
+
   // relaciones inversas
   assignments        SaleAssignment[]
   saleHistories      SaleHistory[]
   uploadedRecordings SaleRecording[]
+
+  @@index([empresaId])
 }
 
 model Client {
@@ -50,18 +84,22 @@ model Client {
   createdAt    DateTime @default(now())
   lastModified DateTime @updatedAt
 
+  empresaId    String
+  empresa      Empresa  @relation(fields: [empresaId], references: [id])
+
   sales Sale[]
 
   @@index([dni])
   @@index([phones(ops: ArrayOps)], type: Gin)
   @@index([createdAt])
+  @@index([empresaId])
 }
 
 model Product {
   id          String   @id @default(uuid())
   name        String
   description String?
-  sku         String?  @unique
+  sku         String?
   price       Decimal
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -74,7 +112,13 @@ model Product {
   precioConsumo Decimal?                      // consumo: precio por unidad (kWh, m³…)
   unidadConsumo String?                       // consumo: etiqueta de unidad ('kWh', 'm³', 'hora'…)
 
+  empresaId     String
+  empresa       Empresa  @relation(fields: [empresaId], references: [id])
+
   saleItems SaleItem[]
+
+  @@unique([sku, empresaId])  // SKU único por empresa (no global)
+  @@index([empresaId])
 }
 
 model Sale {
@@ -89,32 +133,35 @@ model Sale {
   notes           Json?   // [{message, userId, role, createdAt}]
   metadata        Json?
 
-  // 🔥 NUEVOS CAMPOS PARA SNAPSHOTS
-  clientSnapshot  Json?   // ← snapshot del cliente editado en el front
-  addressSnapshot Json?   // ← snapshot de la dirección seleccionada
-  comercial       String? // ← nombre del comercial que hace la venta
+  clientSnapshot  Json?   // snapshot del cliente editado en el front
+  addressSnapshot Json?   // snapshot de la dirección seleccionada
+  comercial       String? // nombre del comercial que hace la venta
+
+  empresaId       String
+  empresa         Empresa @relation(fields: [empresaId], references: [id])
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   closedAt  DateTime?
 
-  items            SaleItem[]
-  assignments      SaleAssignment[]
-  histories        SaleHistory[]
-  recordings       SaleRecording[]
-  signatureRequest SignatureRequest?
+  items             SaleItem[]
+  assignments       SaleAssignment[]
+  histories         SaleHistory[]
+  recordings        SaleRecording[]
+  signatureRequests SignatureRequest[]
 
-  // Índices para mejorar rendimiento de consultas frecuentes
   @@index([clientId])
   @@index([statusId])
   @@index([comercial])
   @@index([createdAt])
-  @@index([createdAt, statusId]) // Índice compuesto para filtros comunes
+  @@index([createdAt, statusId])
+  @@index([empresaId])
 }
 
 model SignatureRequest {
   id                 String    @id @default(uuid())
-  saleId             String    @unique
+  saleId             String
+  documentType       String    @default("contract") // "contract" | "consent"
   sale               Sale      @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   status             String    // "pending" | "signed" | "rejected"
@@ -130,6 +177,7 @@ model SignatureRequest {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
+  @@unique([saleId, documentType])
   @@index([saleId])
   @@index([status])
   @@index([providerDocumentId])
@@ -159,7 +207,6 @@ model SaleItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Índices para mejorar rendimiento
   @@index([saleId])
   @@index([productId])
 }
@@ -173,7 +220,12 @@ model SaleStatus {
   isCancelled Boolean @default(false)
   isSystem    Boolean @default(false)
 
+  empresaId   String
+  empresa     Empresa @relation(fields: [empresaId], references: [id])
+
   sales Sale[]
+
+  @@index([empresaId])
 }
 
 model SaleHistory {
@@ -226,12 +278,24 @@ model SaleRecording {
 
 model AllowedIp {
   id          String   @id @default(uuid())
-  ip          String   @unique
+  ip          String
   description String?
   createdAt   DateTime @default(now())
+
+  empresaId   String
+  empresa     Empresa  @relation(fields: [empresaId], references: [id])
+
+  @@unique([ip, empresaId])  // IP única por empresa (no global)
+  @@index([empresaId])
 }
 
 model SystemSetting {
-  key   String @id
-  value String
+  key       String
+  value     String
+
+  empresaId String
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
+
+  @@id([key, empresaId])  // Clave primaria compuesta
+  @@index([empresaId])
 }

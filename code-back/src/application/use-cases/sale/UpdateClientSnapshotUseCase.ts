@@ -2,7 +2,7 @@ import { ISaleRepository } from '@domain/repositories/ISaleRepository';
 import { CurrentUser } from '@application/shared/types/CurrentUser';
 import { checkRolePermission } from '@application/shared/authorization/checkRolePermission';
 import { rolePermissions } from '@application/shared/authorization/rolePermissions';
-import { NotFoundError, DatabaseError } from '@application/shared/AppError';
+import { NotFoundError, DatabaseError, AuthorizationError } from '@application/shared/AppError';
 
 export class UpdateClientSnapshotUseCase {
   constructor(private saleRepo: ISaleRepository) {}
@@ -14,10 +14,13 @@ export class UpdateClientSnapshotUseCase {
       'actualizar datos del cliente en la venta'
     );
 
-    // Verificar que la venta existe
+    // Verificar que la venta existe y pertenece a esta empresa
     const sale = await this.saleRepo.findById(saleId);
     if (!sale) {
       throw new NotFoundError('Venta', saleId);
+    }
+    if (sale.empresaId !== currentUser.empresaId) {
+      throw new AuthorizationError('No tienes permiso para modificar esta venta');
     }
 
     // Actualizar el clientSnapshot y comercial

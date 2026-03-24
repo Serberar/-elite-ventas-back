@@ -4,6 +4,7 @@ import logger from '@infrastructure/observability/logger/logger';
 import { connectDatabase, disconnectDatabase, prisma } from '@infrastructure/prisma/prismaClient';
 import { App } from '@infrastructure/express/App';
 import tracing from '@infrastructure/observability/tracing/opentelemetry';
+import { SYSTEM_STATUSES } from '@domain/constants';
 
 /**
  * Clase Bootstrap para inicialización ordenada del servidor
@@ -59,29 +60,30 @@ export class Bootstrap {
   }
 
   /**
-   * Crea los estados de sistema si no existen (idempotente)
+   * Garantiza que cada empresa tenga sus estados de sistema (idempotente).
    */
   private async ensureSystemStatuses(): Promise<void> {
-    const systemStatuses = [
-      { name: 'Pendiente firma', order: 1, color: '#f59e0b', isFinal: false, isCancelled: false, isSystem: true },
-      { name: 'Firmada',         order: 2, color: '#10b981', isFinal: true,  isCancelled: false, isSystem: true },
-    ];
+    const empresas = await prisma.empresa.findMany({ select: { id: true } });
 
-    for (const s of systemStatuses) {
-      try {
-        const existing = await prisma.saleStatus.findFirst({ where: { name: s.name } });
-        if (!existing) {
-          await prisma.saleStatus.create({ data: s });
-          logger.info(`Estado de sistema creado: "${s.name}"`);
-        } else if (!existing.isSystem) {
-          await prisma.saleStatus.update({ where: { id: existing.id }, data: { isSystem: true } });
-          logger.info(`Estado de sistema actualizado: "${s.name}"`);
+    for (const empresa of empresas) {
+      for (const s of SYSTEM_STATUSES) {
+        try {
+          const existing = await prisma.saleStatus.findFirst({
+            where: { name: s.name, empresaId: empresa.id },
+          });
+          if (!existing) {
+            await prisma.saleStatus.create({ data: { ...s, empresaId: empresa.id } });
+            logger.info(`Estado de sistema "${s.name}" creado para empresa ${empresa.id}`);
+          } else if (!existing.isSystem) {
+            await prisma.saleStatus.update({ where: { id: existing.id }, data: { isSystem: true } });
+            logger.info(`Estado de sistema "${s.name}" corregido para empresa ${empresa.id}`);
+          }
+        } catch (error) {
+          logger.warn(`No se pudo verificar estado "${s.name}" en empresa ${empresa.id}: ${error instanceof Error ? error.message : error}`);
         }
-      } catch (error) {
-        logger.warn(`No se pudo verificar estado de sistema "${s.name}": ${error instanceof Error ? error.message : error}`);
       }
     }
-    logger.info('Estados de sistema verificados');
+    logger.info('Estados de sistema verificados para todas las empresas');
   }
 
   /**

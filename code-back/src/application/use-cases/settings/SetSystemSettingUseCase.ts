@@ -9,6 +9,6 @@ export class SetSystemSettingUseCase {
     if (currentUser.role !== 'administrador') {
       throw new AuthorizationError('Solo el administrador puede modificar la configuración del sistema');
     }
-    await this.settingRepo.set(key, value);
+    await this.settingRepo.set(key, value, currentUser.empresaId);
   }
 }

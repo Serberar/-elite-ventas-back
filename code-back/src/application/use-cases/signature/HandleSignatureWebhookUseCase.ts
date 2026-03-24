@@ -55,7 +55,9 @@ export class HandleSignatureWebhookUseCase {
         },
       });
 
-      await this.autoChangeSaleStatusToFirmada(signatureRequest.saleId);
+      if (signatureRequest.documentType === 'contract') {
+        await this.autoChangeSaleStatusToFirmada(signatureRequest.saleId);
+      }
     } else if (payload.event === 'rejected') {
       updated = await this.signatureRepo.update(signatureRequest.id, {
         status: 'rejected',
@@ -87,7 +89,10 @@ export class HandleSignatureWebhookUseCase {
     if (!this.saleStatusRepo) return;
 
     try {
-      const allStatuses = await this.saleStatusRepo.list();
+      const sale = await this.saleRepo.findById(saleId);
+      if (!sale) return;
+
+      const allStatuses = await this.saleStatusRepo.list(sale.empresaId);
       const firmadaStatus =
         allStatuses.find((s) => s.name === 'Firmada') ??
         allStatuses.find((s) => s.isFinal && !s.isCancelled);
@@ -97,8 +102,7 @@ export class HandleSignatureWebhookUseCase {
         return;
       }
 
-      const sale = await this.saleRepo.findById(saleId);
-      if (!sale || sale.statusId === firmadaStatus.id) return;
+      if (sale.statusId === firmadaStatus.id) return;
 
       const previousStatus = allStatuses.find((s) => s.id === sale.statusId);
 

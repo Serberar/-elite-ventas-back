@@ -27,12 +27,14 @@ describe('CreateClientUseCase', () => {
       getById: jest.fn(),
       update: jest.fn(),
       getByPhoneOrDNI: jest.fn(),
+      delete: jest.fn(),
     } as jest.Mocked<IClientRepository>;
 
     mockCurrentUser = {
       id: 'user-1',
       firstName: 'testuser',
       role: 'administrador',
+      empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     useCase = new CreateClientUseCase(mockRepository);

@@ -94,11 +94,12 @@ describe('SaleStatusPrismaRepository', () => {
       ];
       (prisma.saleStatus.findMany as jest.Mock).mockResolvedValue(statuses);
 
-      const result = await repository.list();
+      const result = await repository.list('00000000-0000-0000-0000-000000000001');
 
       expect(result).toHaveLength(3);
       expect(result[0]).toBeInstanceOf(SaleStatus);
       expect(prisma.saleStatus.findMany).toHaveBeenCalledWith({
+        where: { empresaId: '00000000-0000-0000-0000-000000000001' },
         orderBy: { order: 'asc' },
       });
     });
@@ -106,7 +107,7 @@ describe('SaleStatusPrismaRepository', () => {
     it('should return empty array when no statuses exist', async () => {
       (prisma.saleStatus.findMany as jest.Mock).mockResolvedValue([]);
 
-      const result = await repository.list();
+      const result = await repository.list('00000000-0000-0000-0000-000000000001');
 
       expect(result).toEqual([]);
     });
@@ -114,7 +115,7 @@ describe('SaleStatusPrismaRepository', () => {
     it('should handle list errors', async () => {
       (prisma.saleStatus.findMany as jest.Mock).mockRejectedValueOnce(new Error('Database error'));
 
-      await expect(repository.list()).rejects.toThrow('Database error');
+      await expect(repository.list('00000000-0000-0000-0000-000000000001')).rejects.toThrow('Database error');
     });
   });
 
@@ -122,20 +123,20 @@ describe('SaleStatusPrismaRepository', () => {
     it('should find initial non-final status', async () => {
       (prisma.saleStatus.findFirst as jest.Mock).mockResolvedValue(mockStatusData);
 
-      const result = await repository.findInitialStatus();
+      const result = await repository.findInitialStatus('00000000-0000-0000-0000-000000000001');
 
       expect(result).toBeInstanceOf(SaleStatus);
       expect(result?.isFinal).toBe(false);
       expect(prisma.saleStatus.findFirst).toHaveBeenCalledWith({
         orderBy: { order: 'asc' },
-        where: { isFinal: false },
+        where: { isFinal: false, empresaId: '00000000-0000-0000-0000-000000000001' },
       });
     });
 
     it('should return null when no initial status exists', async () => {
       (prisma.saleStatus.findFirst as jest.Mock).mockResolvedValue(null);
 
-      const result = await repository.findInitialStatus();
+      const result = await repository.findInitialStatus('00000000-0000-0000-0000-000000000001');
 
       expect(result).toBeNull();
     });
@@ -151,6 +152,7 @@ describe('SaleStatusPrismaRepository', () => {
         color: '#FFFF00',
         isFinal: false,
         isCancelled: false,
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
 
       expect(result).toBeInstanceOf(SaleStatus);
@@ -161,6 +163,7 @@ describe('SaleStatusPrismaRepository', () => {
           color: '#FFFF00',
           isFinal: false,
           isCancelled: false,
+          empresaId: '00000000-0000-0000-0000-000000000001',
         },
       });
     });
@@ -172,6 +175,7 @@ describe('SaleStatusPrismaRepository', () => {
       const result = await repository.create({
         name: 'Pending',
         order: 1,
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
 
       expect(result).toBeInstanceOf(SaleStatus);
@@ -182,6 +186,7 @@ describe('SaleStatusPrismaRepository', () => {
           color: null,
           isFinal: false,
           isCancelled: false,
+          empresaId: '00000000-0000-0000-0000-000000000001',
         },
       });
     });
@@ -194,6 +199,7 @@ describe('SaleStatusPrismaRepository', () => {
         name: 'Pending',
         order: 1,
         color: null,
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
 
       expect(result).toBeInstanceOf(SaleStatus);
@@ -203,7 +209,7 @@ describe('SaleStatusPrismaRepository', () => {
       (prisma.saleStatus.create as jest.Mock).mockRejectedValueOnce(new Error('Duplicate order error'));
 
       await expect(
-        repository.create({ name: 'Pending', order: 1 })
+        repository.create({ name: 'Pending', order: 1, empresaId: '00000000-0000-0000-0000-000000000001' })
       ).rejects.toThrow('Duplicate order error');
     });
   });

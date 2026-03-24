@@ -1,8 +1,9 @@
 import { IUserRepository } from '@domain/repositories/IUserRepository';
 import { User } from '@domain/entities/User';
 import logger from '@infrastructure/observability/logger/logger';
-import { NotFoundError, ConflictError } from '@application/shared/AppError';
+import { NotFoundError, ConflictError, AuthorizationError } from '@application/shared/AppError';
 import bcrypt from 'bcryptjs';
+import { CurrentUser } from '@application/shared/types/CurrentUser';
 
 export interface UpdateUserDTO {
   firstName?: string;
@@ -21,6 +22,7 @@ export interface UpdateUserResult {
   role: string;
   active: boolean;
   failedLoginAttempts: number;
+  empresaId: string;
   createdAt: string;
   lastLoginAt: string | null;
 }
@@ -28,13 +30,17 @@ export interface UpdateUserResult {
 export class UpdateUserUseCase {
   constructor(private userRepository: IUserRepository) {}
 
-  async execute(userId: string, data: UpdateUserDTO): Promise<UpdateUserResult> {
+  async execute(userId: string, data: UpdateUserDTO, currentUser: CurrentUser): Promise<UpdateUserResult> {
     logger.info(`Intentando actualizar usuario: ${userId}`);
 
     const existingUser = await this.userRepository.findById(userId);
     if (!existingUser) {
       logger.warn(`Usuario no encontrado para actualizar: ${userId}`);
       throw new NotFoundError('Usuario no encontrado');
+    }
+
+    if (existingUser.empresaId !== currentUser.empresaId) {
+      throw new AuthorizationError('No tienes permiso para modificar usuarios de otra empresa');
     }
 
     if (data.username && data.username !== existingUser.username) {
@@ -61,6 +67,7 @@ export class UpdateUserUseCase {
       data.username ?? existingUser.username,
       newPassword,
       data.role ?? existingUser.role,
+      existingUser.empresaId,
       newActive,
       newFailedAttempts,
       existingUser.createdAt,
@@ -81,6 +88,7 @@ export class UpdateUserUseCase {
       role: updatedUser.role,
       active: updatedUser.active,
       failedLoginAttempts: updatedUser.failedLoginAttempts,
+      empresaId: updatedUser.empresaId,
       createdAt: updatedUser.createdAt.toISOString(),
       lastLoginAt: updatedUser.lastLoginAt?.toISOString() ?? null,
     };

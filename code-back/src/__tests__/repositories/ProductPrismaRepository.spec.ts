@@ -7,6 +7,7 @@ jest.mock('@infrastructure/prisma/prismaClient', () => ({
     product: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
@@ -64,11 +65,12 @@ describe('ProductPrismaRepository', () => {
       ];
       (prisma.product.findMany as jest.Mock).mockResolvedValue(products);
 
-      const result = await repository.findAll();
+      const result = await repository.findAll('00000000-0000-0000-0000-000000000001');
 
       expect(result).toHaveLength(2);
       expect(result[0]).toBeInstanceOf(Product);
       expect(prisma.product.findMany).toHaveBeenCalledWith({
+        where: { empresaId: '00000000-0000-0000-0000-000000000001' },
         orderBy: { name: 'asc' },
       });
     });
@@ -76,7 +78,7 @@ describe('ProductPrismaRepository', () => {
     it('should return empty array when no products exist', async () => {
       (prisma.product.findMany as jest.Mock).mockResolvedValue([]);
 
-      const result = await repository.findAll();
+      const result = await repository.findAll('00000000-0000-0000-0000-000000000001');
 
       expect(result).toEqual([]);
     });
@@ -85,7 +87,7 @@ describe('ProductPrismaRepository', () => {
       const error = new Error('Database error');
       (prisma.product.findMany as jest.Mock).mockRejectedValue(error);
 
-      await expect(repository.findAll()).rejects.toThrow(error);
+      await expect(repository.findAll('00000000-0000-0000-0000-000000000001')).rejects.toThrow(error);
     });
   });
 
@@ -120,30 +122,30 @@ describe('ProductPrismaRepository', () => {
 
   describe('findBySKU', () => {
     it('should find product by SKU', async () => {
-      (prisma.product.findUnique as jest.Mock).mockResolvedValue(mockProductData);
+      (prisma.product.findFirst as jest.Mock).mockResolvedValue(mockProductData);
 
-      const result = await repository.findBySKU('SKU-123');
+      const result = await repository.findBySKU('SKU-123', '00000000-0000-0000-0000-000000000001');
 
       expect(result).toBeInstanceOf(Product);
       expect(result?.sku).toBe('SKU-123');
-      expect(prisma.product.findUnique).toHaveBeenCalledWith({
-        where: { sku: 'SKU-123' },
+      expect(prisma.product.findFirst).toHaveBeenCalledWith({
+        where: { sku: 'SKU-123', empresaId: '00000000-0000-0000-0000-000000000001' },
       });
     });
 
     it('should return null when SKU not found', async () => {
-      (prisma.product.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.product.findFirst as jest.Mock).mockResolvedValue(null);
 
-      const result = await repository.findBySKU('nonexistent');
+      const result = await repository.findBySKU('nonexistent', '00000000-0000-0000-0000-000000000001');
 
       expect(result).toBeNull();
     });
 
     it('should handle find by SKU errors', async () => {
       const error = new Error('Database error');
-      (prisma.product.findUnique as jest.Mock).mockRejectedValue(error);
+      (prisma.product.findFirst as jest.Mock).mockRejectedValue(error);
 
-      await expect(repository.findBySKU('SKU-123')).rejects.toThrow(error);
+      await expect(repository.findBySKU('SKU-123', '00000000-0000-0000-0000-000000000001')).rejects.toThrow(error);
     });
   });
 
@@ -156,6 +158,7 @@ describe('ProductPrismaRepository', () => {
         description: 'Test description',
         sku: 'SKU-123',
         price: 99.99,
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
 
       expect(result).toBeInstanceOf(Product);
@@ -166,6 +169,12 @@ describe('ProductPrismaRepository', () => {
           sku: 'SKU-123',
           price: 99.99,
           active: true,
+          empresaId: '00000000-0000-0000-0000-000000000001',
+          tipo: 'unico',
+          periodo: null,
+          precioBase: null,
+          precioConsumo: null,
+          unidadConsumo: null,
         },
       });
     });
@@ -177,6 +186,7 @@ describe('ProductPrismaRepository', () => {
       const result = await repository.create({
         name: 'Test Product',
         price: 99.99,
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
 
       expect(result).toBeInstanceOf(Product);
@@ -187,6 +197,12 @@ describe('ProductPrismaRepository', () => {
           sku: null,
           price: 99.99,
           active: true,
+          empresaId: '00000000-0000-0000-0000-000000000001',
+          tipo: 'unico',
+          periodo: null,
+          precioBase: null,
+          precioConsumo: null,
+          unidadConsumo: null,
         },
       });
     });
@@ -196,7 +212,7 @@ describe('ProductPrismaRepository', () => {
       (prisma.product.create as jest.Mock).mockRejectedValue(error);
 
       await expect(
-        repository.create({ name: 'Test', price: 99.99 })
+        repository.create({ name: 'Test', price: 99.99, empresaId: '00000000-0000-0000-0000-000000000001' })
       ).rejects.toThrow(error);
     });
   });

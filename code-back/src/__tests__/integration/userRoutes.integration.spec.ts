@@ -60,7 +60,7 @@ jest.mock('@infrastructure/express/utils/cookieAuth', () => ({
 jest.mock('@infrastructure/express/middleware/authMiddleware', () => ({
   authMiddleware: (req: any, res: any, next: any) => {
     if (req.headers.authorization === 'Bearer valid-token') {
-      req.user = { id: 'user-123', role: 'administrador', firstName: 'Admin' };
+      req.user = { id: 'user-123', role: 'administrador', firstName: 'Admin', empresaId: '00000000-0000-0000-0000-000000000001' };
       next();
     } else {
       res.status(401).json({ message: 'No autorizado' });
@@ -111,6 +111,7 @@ describe('Integration: User Routes', () => {
 
       const response = await request(app)
         .post('/api/users/register')
+        .set('Authorization', 'Bearer valid-token')
         .send({
           username: 'testuser',
           password: 'Password123!',
@@ -131,6 +132,7 @@ describe('Integration: User Routes', () => {
 
       const response = await request(app)
         .post('/api/users/register')
+        .set('Authorization', 'Bearer valid-token')
         .send({
           username: 'existinguser',
           password: 'Password123!',
@@ -375,7 +377,7 @@ describe('Integration: User Routes', () => {
       expect(response.body).toHaveProperty('message', 'Usuario actualizado correctamente');
       expect(response.body.user).toHaveProperty('id', 'user-123');
       expect(response.body.user).toHaveProperty('firstName', 'Nombre Actualizado');
-      expect(serviceContainer.updateUserUseCase.execute).toHaveBeenCalledWith('user-123', { firstName: 'Nombre Actualizado' });
+      expect(serviceContainer.updateUserUseCase.execute).toHaveBeenCalledWith('user-123', { firstName: 'Nombre Actualizado' }, expect.objectContaining({ id: 'user-123', role: 'administrador' }));
     });
 
     it('should return 404 when user not found', async () => {

@@ -12,12 +12,13 @@ describe('DeleteSaleStatusUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
-  const regularStatus = new SaleStatus('status-1', 'En proceso', 2, '#00FF00', false, false, false);
-  const systemStatus = new SaleStatus('status-sys', 'Sistema', 1, '#FFFFFF', false, false, true);
-  const cancelledStatus = new SaleStatus('status-cancel', 'Cancelado', 5, '#FF0000', false, true, false);
-  const finalStatus = new SaleStatus('status-final', 'Finalizado', 4, '#00FFFF', true, false, false);
+  const regularStatus = new SaleStatus('status-1', 'En proceso', 2, '#00FF00', false, false, false, '00000000-0000-0000-0000-000000000001');
+  const systemStatus = new SaleStatus('status-sys', 'Sistema', 1, '#FFFFFF', false, false, true, '00000000-0000-0000-0000-000000000001');
+  const cancelledStatus = new SaleStatus('status-cancel', 'Cancelado', 5, '#FF0000', false, true, false, '00000000-0000-0000-0000-000000000001');
+  const finalStatus = new SaleStatus('status-final', 'Finalizado', 4, '#00FFFF', true, false, false, '00000000-0000-0000-0000-000000000001');
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -83,26 +84,34 @@ describe('DeleteSaleStatusUseCase', () => {
       expect(mockRepository.delete).not.toHaveBeenCalled();
     });
 
-    it('should throw AuthorizationError for coordinador role', async () => {
+    it('should work with coordinador role', async () => {
       const coordinadorUser: CurrentUser = {
         id: 'user-456',
         role: 'coordinador',
         firstName: 'Coordinador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
-      await expect(useCase.execute('status-1', coordinadorUser)).rejects.toThrow(AuthorizationError);
-      expect(mockRepository.findById).not.toHaveBeenCalled();
-      expect(mockRepository.delete).not.toHaveBeenCalled();
+      mockRepository.findById.mockResolvedValue(regularStatus);
+      mockRepository.delete.mockResolvedValue(undefined);
+
+      await useCase.execute('status-1', coordinadorUser);
+      expect(mockRepository.delete).toHaveBeenCalledWith('status-1');
     });
 
-    it('should throw AuthorizationError for verificador role', async () => {
+    it('should also work with coordinador role (duplicate check)', async () => {
       const verificadorUser: CurrentUser = {
         id: 'user-789',
-        role: 'verificador',
+        role: 'coordinador',
         firstName: 'Verificador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
-      await expect(useCase.execute('status-1', verificadorUser)).rejects.toThrow(AuthorizationError);
+      mockRepository.findById.mockResolvedValue(regularStatus);
+      mockRepository.delete.mockResolvedValue(undefined);
+
+      await useCase.execute('status-1', verificadorUser);
+      expect(mockRepository.delete).toHaveBeenCalledWith('status-1');
     });
 
     it('should handle repository errors on delete', async () => {

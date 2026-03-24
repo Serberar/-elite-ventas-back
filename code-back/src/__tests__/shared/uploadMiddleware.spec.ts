@@ -51,7 +51,11 @@ describe('uploadMiddleware', () => {
 
   describe('multer configuration', () => {
     it('should call multer.diskStorage to create storage', () => {
-      expect(multer.diskStorage).toHaveBeenCalledTimes(1);
+      // diskStorageConfig is captured at module load time (before clearMocks resets call counts)
+      // so we verify the config object was captured (proving diskStorage was called)
+      expect(diskStorageConfig).toBeDefined();
+      expect(diskStorageConfig).toHaveProperty('destination');
+      expect(diskStorageConfig).toHaveProperty('filename');
     });
 
     it('should configure multer with fileSize limit', () => {

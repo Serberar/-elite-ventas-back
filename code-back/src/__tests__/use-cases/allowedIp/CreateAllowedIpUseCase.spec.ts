@@ -12,6 +12,7 @@ describe('CreateAllowedIpUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockAllowedIp = new AllowedIp('ip-123', '192.168.1.1', 'Office IP', new Date('2024-01-01'));
@@ -39,6 +40,7 @@ describe('CreateAllowedIpUseCase', () => {
       expect(mockRepository.create).toHaveBeenCalledWith({
         ip: '192.168.1.1',
         description: 'Office IP',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
     });
 
@@ -52,6 +54,7 @@ describe('CreateAllowedIpUseCase', () => {
       expect(mockRepository.create).toHaveBeenCalledWith({
         ip: '10.0.0.1',
         description: null,
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
     });
 
@@ -60,6 +63,7 @@ describe('CreateAllowedIpUseCase', () => {
         id: 'user-456',
         role: 'coordinador',
         firstName: 'Coordinador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute({ ip: '192.168.1.1' }, nonAdminUser)).rejects.toThrow(
@@ -68,11 +72,12 @@ describe('CreateAllowedIpUseCase', () => {
       expect(mockRepository.create).not.toHaveBeenCalled();
     });
 
-    it('should throw AuthorizationError for verificador role', async () => {
+    it('should throw AuthorizationError for coordinador role', async () => {
       const verificadorUser: CurrentUser = {
         id: 'user-789',
-        role: 'verificador',
+        role: 'coordinador',
         firstName: 'Verificador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute({ ip: '192.168.1.1' }, verificadorUser)).rejects.toThrow(
@@ -85,6 +90,7 @@ describe('CreateAllowedIpUseCase', () => {
         id: 'user-999',
         role: 'comercial',
         firstName: 'Comercial',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute({ ip: '192.168.1.1' }, comercialUser)).rejects.toThrow(
@@ -107,6 +113,7 @@ describe('CreateAllowedIpUseCase', () => {
       expect(mockRepository.create).toHaveBeenCalledWith({
         ip: '192.168.1.1',
         description: null,
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
     });
   });

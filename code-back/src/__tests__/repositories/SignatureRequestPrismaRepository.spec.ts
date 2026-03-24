@@ -26,6 +26,7 @@ describe('SignatureRequestPrismaRepository', () => {
   const mockRow = {
     id: 'sig-1',
     saleId: 'sale-123',
+    documentType: 'contract',
     status: 'pending',
     signerEmail: 'john@example.com',
     providerDocumentId: 'doc-abc',
@@ -58,6 +59,7 @@ describe('SignatureRequestPrismaRepository', () => {
       expect(prisma.signatureRequest.create).toHaveBeenCalledWith({
         data: {
           saleId: 'sale-123',
+          documentType: 'contract',
           status: 'pending',
           signerEmail: 'john@example.com',
           providerDocumentId: 'doc-abc',
@@ -126,7 +128,7 @@ describe('SignatureRequestPrismaRepository', () => {
       const result = await repository.findBySaleId('sale-123');
 
       expect(prisma.signatureRequest.findUnique).toHaveBeenCalledWith({
-        where: { saleId: 'sale-123' },
+        where: { saleId_documentType: { saleId: 'sale-123', documentType: 'contract' } },
       });
       expect(result).toBeInstanceOf(SignatureRequest);
       expect(result?.saleId).toBe('sale-123');
@@ -138,6 +140,21 @@ describe('SignatureRequestPrismaRepository', () => {
       const result = await repository.findBySaleId('sale-no-sig');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findBySaleIdAndType', () => {
+    it('should return a consent SignatureRequest for the sale', async () => {
+      const consentRow = { ...mockRow, documentType: 'consent' };
+      (prisma.signatureRequest.findUnique as jest.Mock).mockResolvedValue(consentRow);
+
+      const result = await repository.findBySaleIdAndType('sale-123', 'consent');
+
+      expect(prisma.signatureRequest.findUnique).toHaveBeenCalledWith({
+        where: { saleId_documentType: { saleId: 'sale-123', documentType: 'consent' } },
+      });
+      expect(result).toBeInstanceOf(SignatureRequest);
+      expect(result?.documentType).toBe('consent');
     });
   });
 

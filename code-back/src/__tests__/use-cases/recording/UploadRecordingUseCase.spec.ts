@@ -15,6 +15,7 @@ describe('UploadRecordingUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockSale = new Sale(
@@ -113,7 +114,7 @@ describe('UploadRecordingUseCase', () => {
     });
 
     it('should work with coordinador role', async () => {
-      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C' };
+      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C', empresaId: '00000000-0000-0000-0000-000000000001' };
       mockSaleRepo.findById.mockResolvedValue(mockSale);
       mockRecordingRepo.create.mockResolvedValue(mockRecording);
       mockSaleRepo.addHistory.mockResolvedValue({} as any);
@@ -123,8 +124,8 @@ describe('UploadRecordingUseCase', () => {
       expect(result).toEqual(mockRecording);
     });
 
-    it('should work with verificador role', async () => {
-      const verificadorUser: CurrentUser = { id: 'u3', role: 'verificador', firstName: 'V' };
+    it('should work with coordinador role', async () => {
+      const verificadorUser: CurrentUser = { id: 'u3', role: 'coordinador', firstName: 'V', empresaId: '00000000-0000-0000-0000-000000000001' };
       mockSaleRepo.findById.mockResolvedValue(mockSale);
       mockRecordingRepo.create.mockResolvedValue(mockRecording);
       mockSaleRepo.addHistory.mockResolvedValue({} as any);
@@ -135,7 +136,7 @@ describe('UploadRecordingUseCase', () => {
     });
 
     it('should throw AuthorizationError for comercial role', async () => {
-      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com' };
+      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
 
       await expect(useCase.execute(uploadDto, comercialUser)).rejects.toThrow(AuthorizationError);
     });

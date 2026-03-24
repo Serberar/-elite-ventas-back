@@ -16,17 +16,20 @@ describe('GetSignatureStatusUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const pendingRequest = new SignatureRequest(
-    'sig-1', 'sale-123', 'pending', 'client@example.com',
+    'sig-1', 'sale-123', 'contract',
+      'pending', 'client@example.com',
     'doc-provider-123', null, null,
     new Date('2024-01-01'), null, null,
     new Date('2024-01-01'), new Date('2024-01-01')
   );
 
   const signedRequest = new SignatureRequest(
-    'sig-2', 'sale-456', 'signed', 'client@example.com',
+    'sig-2', 'sale-456', 'contract',
+      'signed', 'client@example.com',
     'doc-123', 'https://signed-doc.url', null,
     new Date('2024-01-01'), new Date('2024-01-15'), null,
     new Date('2024-01-01'), new Date('2024-01-15')
@@ -39,6 +42,7 @@ describe('GetSignatureStatusUseCase', () => {
       create: jest.fn(),
       findById: jest.fn(),
       findBySaleId: jest.fn(),
+      findBySaleIdAndType: jest.fn(),
       findByProviderDocumentId: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -63,17 +67,17 @@ describe('GetSignatureStatusUseCase', () => {
 
   describe('execute', () => {
     it('should return signature request when found (non-pending)', async () => {
-      mockSignatureRepo.findBySaleId.mockResolvedValue(signedRequest);
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(signedRequest);
 
       const result = await useCase.execute('sale-456', mockUser);
 
       expect(result).toEqual(signedRequest);
-      expect(mockSignatureRepo.findBySaleId).toHaveBeenCalledWith('sale-456');
+      expect(mockSignatureRepo.findBySaleIdAndType).toHaveBeenCalledWith('sale-456', 'contract');
       expect(mockSignatureProvider.getDocumentStatus).not.toHaveBeenCalled();
     });
 
     it('should return null when no signature request exists', async () => {
-      mockSignatureRepo.findBySaleId.mockResolvedValue(null);
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(null);
 
       const result = await useCase.execute('sale-123', mockUser);
 
@@ -82,7 +86,7 @@ describe('GetSignatureStatusUseCase', () => {
     });
 
     it('should poll provider when status is pending and update DB if signed', async () => {
-      mockSignatureRepo.findBySaleId.mockResolvedValue(pendingRequest);
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(pendingRequest);
       mockSignatureProvider.getDocumentStatus.mockResolvedValue({ status: 'signed' });
       mockHandleWebhook.execute.mockResolvedValue(signedRequest);
 
@@ -98,10 +102,11 @@ describe('GetSignatureStatusUseCase', () => {
     });
 
     it('should poll provider when status is pending and update DB if rejected', async () => {
-      mockSignatureRepo.findBySaleId.mockResolvedValue(pendingRequest);
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(pendingRequest);
       mockSignatureProvider.getDocumentStatus.mockResolvedValue({ status: 'rejected' });
       const rejectedRequest = new SignatureRequest(
-        'sig-1', 'sale-123', 'rejected', 'client@example.com',
+        'sig-1', 'sale-123', 'contract',
+      'rejected', 'client@example.com',
         'doc-provider-123', null, 'Rechazado',
         new Date('2024-01-01'), null, new Date('2024-01-02'),
         new Date('2024-01-01'), new Date('2024-01-02')
@@ -119,7 +124,7 @@ describe('GetSignatureStatusUseCase', () => {
     });
 
     it('should return DB status if provider poll returns pending', async () => {
-      mockSignatureRepo.findBySaleId.mockResolvedValue(pendingRequest);
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(pendingRequest);
       mockSignatureProvider.getDocumentStatus.mockResolvedValue({ status: 'pending' });
 
       const result = await useCase.execute('sale-123', mockUser);
@@ -130,7 +135,7 @@ describe('GetSignatureStatusUseCase', () => {
     });
 
     it('should return DB status if provider poll fails', async () => {
-      mockSignatureRepo.findBySaleId.mockResolvedValue(pendingRequest);
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(pendingRequest);
       mockSignatureProvider.getDocumentStatus.mockRejectedValue(new Error('Network error'));
 
       const result = await useCase.execute('sale-123', mockUser);
@@ -140,17 +145,17 @@ describe('GetSignatureStatusUseCase', () => {
     });
 
     it('should work with coordinador role', async () => {
-      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C' };
-      mockSignatureRepo.findBySaleId.mockResolvedValue(signedRequest);
+      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C', empresaId: '00000000-0000-0000-0000-000000000001' };
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(signedRequest);
 
       const result = await useCase.execute('sale-456', coordinadorUser);
 
       expect(result).toEqual(signedRequest);
     });
 
-    it('should work with verificador role', async () => {
-      const verificadorUser: CurrentUser = { id: 'u3', role: 'verificador', firstName: 'V' };
-      mockSignatureRepo.findBySaleId.mockResolvedValue(null);
+    it('should work with coordinador role', async () => {
+      const verificadorUser: CurrentUser = { id: 'u3', role: 'coordinador', firstName: 'V', empresaId: '00000000-0000-0000-0000-000000000001' };
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(null);
 
       const result = await useCase.execute('sale-123', verificadorUser);
 
@@ -158,8 +163,8 @@ describe('GetSignatureStatusUseCase', () => {
     });
 
     it('should work with comercial role', async () => {
-      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com' };
-      mockSignatureRepo.findBySaleId.mockResolvedValue(signedRequest);
+      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(signedRequest);
 
       const result = await useCase.execute('sale-456', comercialUser);
 
@@ -167,14 +172,14 @@ describe('GetSignatureStatusUseCase', () => {
     });
 
     it('should throw AuthorizationError for unknown role', async () => {
-      const unknownUser: CurrentUser = { id: 'u5', role: 'unknown_role' as any, firstName: 'U' };
+      const unknownUser: CurrentUser = { id: 'u5', role: 'unknown_role' as any, firstName: 'U', empresaId: '00000000-0000-0000-0000-000000000001' };
 
       await expect(useCase.execute('sale-123', unknownUser)).rejects.toThrow(AuthorizationError);
       expect(mockSignatureRepo.findBySaleId).not.toHaveBeenCalled();
     });
 
     it('should handle repository errors', async () => {
-      mockSignatureRepo.findBySaleId.mockRejectedValue(new Error('DB error'));
+      mockSignatureRepo.findBySaleIdAndType.mockRejectedValue(new Error('DB error'));
 
       await expect(useCase.execute('sale-123', mockUser)).rejects.toThrow('DB error');
     });

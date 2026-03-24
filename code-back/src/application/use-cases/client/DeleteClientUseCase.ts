@@ -1,11 +1,12 @@
 import { IClientRepository } from '@domain/repositories/IClientRepository';
 import { NotFoundError, AuthorizationError } from '@application/shared/AppError';
+import { CurrentUser } from '@application/shared/types/CurrentUser';
 import logger from '@infrastructure/observability/logger/logger';
 
 export class DeleteClientUseCase {
   constructor(private clientRepository: IClientRepository) {}
 
-  async execute(clientId: string, password: string): Promise<void> {
+  async execute(clientId: string, password: string, currentUser: CurrentUser): Promise<void> {
     const deletePassword = process.env.DELETE_CLIENT_PASSWORD;
     if (!deletePassword || password !== deletePassword) {
       logger.warn(`Intento de eliminación de cliente con contraseña incorrecta: ${clientId}`);
@@ -15,6 +16,10 @@ export class DeleteClientUseCase {
     const client = await this.clientRepository.getById(clientId);
     if (!client) {
       throw new NotFoundError('Cliente', clientId);
+    }
+
+    if (client.empresaId !== currentUser.empresaId) {
+      throw new AuthorizationError('No tienes permiso para eliminar este cliente');
     }
 
     await this.clientRepository.delete(clientId);

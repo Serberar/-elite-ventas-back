@@ -12,6 +12,7 @@ describe('CreateSaleStatusUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Test',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   beforeEach(() => {
@@ -46,6 +47,7 @@ describe('CreateSaleStatusUseCase', () => {
         color: '#0000FF',
         isFinal: false,
         isCancelled: false,
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
     });
 
@@ -63,6 +65,7 @@ describe('CreateSaleStatusUseCase', () => {
         color: null,
         isFinal: false,
         isCancelled: false,
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
     });
 
@@ -71,6 +74,7 @@ describe('CreateSaleStatusUseCase', () => {
         id: 'user-456',
         role: 'comercial',
         firstName: 'Comercial',
+    empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       const dto = { name: 'New Status', order: 4, isFinal: false, isCancelled: false };

@@ -20,7 +20,7 @@ export class CancelSignatureRequestUseCase {
       'cancelar solicitud de firma'
     );
 
-    const signatureRequest = await this.signatureRepo.findBySaleId(saleId);
+    const signatureRequest = await this.signatureRepo.findBySaleIdAndType(saleId, 'contract');
     if (!signatureRequest) throw new NotFoundError('SolicitudFirma', saleId);
 
     if (signatureRequest.providerDocumentId) {

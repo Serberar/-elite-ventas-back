@@ -28,17 +28,18 @@ export class GetSalesStatsUseCase {
 
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Obtener IDs de estados cancelados para excluirlos
+    // Obtener IDs de estados cancelados para esta empresa
     const cancelledStatuses = await prisma.saleStatus.findMany({
-      where: { isCancelled: true },
+      where: { isCancelled: true, empresaId: currentUser.empresaId },
       select: { id: true },
     });
     const cancelledIds = cancelledStatuses.map((s) => s.id);
 
-    // Contar ventas excluyendo canceladas
+    // Contar ventas excluyendo canceladas, solo de esta empresa
     const whereNotCancelled = cancelledIds.length > 0
       ? { statusId: { notIn: cancelledIds } }
       : {};
+    const whereEmpresa = { empresaId: currentUser.empresaId };
 
     // Sumar cantidad de productos vendidos (no importe, sino unidades)
     const [dailyResult, weeklyResult, monthlyResult] = await Promise.all([
@@ -46,6 +47,7 @@ export class GetSalesStatsUseCase {
         where: {
           sale: {
             ...whereNotCancelled,
+            ...whereEmpresa,
             createdAt: { gte: startOfDay },
           },
         },
@@ -55,6 +57,7 @@ export class GetSalesStatsUseCase {
         where: {
           sale: {
             ...whereNotCancelled,
+            ...whereEmpresa,
             createdAt: { gte: startOfWeek },
           },
         },
@@ -64,6 +67,7 @@ export class GetSalesStatsUseCase {
         where: {
           sale: {
             ...whereNotCancelled,
+            ...whereEmpresa,
             createdAt: { gte: startOfMonth },
           },
         },

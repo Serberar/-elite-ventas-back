@@ -11,6 +11,7 @@ jest.mock('@infrastructure/container/ServiceContainer', () => ({
     getAllUsersUseCase: { execute: jest.fn() },
     deleteUserUseCase: { execute: jest.fn() },
     updateUserUseCase: { execute: jest.fn() },
+    getEmpresaUseCase: { execute: jest.fn() },
   },
 }));
 
@@ -70,6 +71,7 @@ describe('UserController', () => {
   // REGISTER
   it('register: debería registrar un usuario correctamente', async () => {
     (serviceContainer.registerUserUseCase.execute as jest.Mock).mockResolvedValue(mockUser);
+    req.user = { id: 'admin-1', role: 'administrador', firstName: 'Admin', empresaId: '00000000-0000-0000-0000-000000000001' } as any;
     req.body = {
       firstName: 'Juan',
       lastName: 'Pérez',
@@ -86,6 +88,7 @@ describe('UserController', () => {
       username: 'juan123',
       password: '123456',
       role: 'administrador',
+      empresaId: '00000000-0000-0000-0000-000000000001',
     });
     expect(statusMock).toHaveBeenCalledWith(201);
     expect(jsonMock).toHaveBeenCalledWith({
@@ -105,6 +108,7 @@ describe('UserController', () => {
     (serviceContainer.registerUserUseCase.execute as jest.Mock).mockRejectedValue(
       new Error('Error registro')
     );
+    req.user = { id: 'admin-1', role: 'administrador', firstName: 'Admin', empresaId: '00000000-0000-0000-0000-000000000001' } as any;
     req.body = {};
 
     await UserController.register(req as Request, res as Response);
@@ -206,5 +210,57 @@ describe('UserController', () => {
     expect(jsonMock).toHaveBeenCalledWith({
       message: 'Sesión cerrada',
     });
+  });
+
+  // GET ME
+  it('getMe: debería devolver datos del usuario con paginasHabilitadas', async () => {
+    const mockEmpresa = { paginasHabilitadas: ['ventas', 'buscador'] };
+    (serviceContainer.getEmpresaUseCase.execute as jest.Mock).mockResolvedValue(mockEmpresa);
+
+    req = {
+      ...req,
+      user: {
+        id: 'user-1',
+        role: 'administrador',
+        firstName: 'Juan',
+        empresaId: '00000000-0000-0000-0000-000000000001',
+      } as any,
+    };
+
+    await UserController.getMe(req as any, res as Response);
+
+    expect(statusMock).toHaveBeenCalledWith(200);
+    expect(jsonMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'user-1',
+        role: 'administrador',
+        firstName: 'Juan',
+        empresaId: '00000000-0000-0000-0000-000000000001',
+        paginasHabilitadas: ['ventas', 'buscador'],
+      })
+    );
+  });
+
+  it('getMe: devuelve paginasHabilitadas vacío si empresa no encontrada', async () => {
+    (serviceContainer.getEmpresaUseCase.execute as jest.Mock).mockRejectedValue(
+      new Error('Empresa con ID xxx no encontrado')
+    );
+
+    req = {
+      ...req,
+      user: {
+        id: 'user-1',
+        role: 'comercial',
+        firstName: 'Maria',
+        empresaId: 'nonexistent-id',
+      } as any,
+    };
+
+    await UserController.getMe(req as any, res as Response);
+
+    expect(statusMock).toHaveBeenCalledWith(200);
+    expect(jsonMock).toHaveBeenCalledWith(
+      expect.objectContaining({ paginasHabilitadas: [] })
+    );
   });
 });

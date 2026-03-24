@@ -142,6 +142,11 @@ export interface ContractTemplate extends ContractConfig {
   /** Si true, es la plantilla que se usa por defecto cuando no se especifica */
   esDefecto: boolean;
   /**
+   * Tipo de documento al que aplica esta plantilla.
+   * 'contrato' (por defecto) | 'consentimiento'
+   */
+  tipo?: 'contrato' | 'consentimiento';
+  /**
    * Ruta interna al fichero .docx subido por el administrador.
    * Si está presente, se usa carbone+LibreOffice en lugar del generador HTML/pdfkit.
    */

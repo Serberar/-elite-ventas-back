@@ -18,6 +18,7 @@ describe('ListProductsUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockProducts: Product[] = [
@@ -85,6 +86,7 @@ describe('ListProductsUseCase', () => {
         id: 'user-456',
         role: 'unknown_role' as any,
         firstName: 'Unknown',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute(userWithoutPermission)).rejects.toThrow(AuthorizationError);
@@ -96,6 +98,7 @@ describe('ListProductsUseCase', () => {
         id: 'user-456',
         role: 'comercial',
         firstName: 'Comercial',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       mockRepository.findAll.mockResolvedValue(mockProducts);
@@ -111,6 +114,7 @@ describe('ListProductsUseCase', () => {
         id: 'user-789',
         role: 'coordinador',
         firstName: 'Coordinador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       mockRepository.findAll.mockResolvedValue(mockProducts);
@@ -120,11 +124,12 @@ describe('ListProductsUseCase', () => {
       expect(result).toEqual(mockProducts);
     });
 
-    it('should work with verificador role', async () => {
+    it('should work with coordinador role', async () => {
       const verificadorUser: CurrentUser = {
         id: 'user-999',
-        role: 'verificador',
+        role: 'coordinador',
         firstName: 'Verificador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       mockRepository.findAll.mockResolvedValue(mockProducts);

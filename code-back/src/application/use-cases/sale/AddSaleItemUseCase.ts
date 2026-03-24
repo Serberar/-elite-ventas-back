@@ -3,6 +3,7 @@ import { CurrentUser } from '@application/shared/types/CurrentUser';
 import { checkRolePermission } from '@application/shared/authorization/checkRolePermission';
 import { rolePermissions } from '@application/shared/authorization/rolePermissions';
 import { businessSaleItemsAdded } from '@infrastructure/observability/metrics/prometheusMetrics';
+import { NotFoundError, AuthorizationError } from '@application/shared/AppError';
 
 export class AddSaleItemUseCase {
   constructor(private saleRepo: ISaleRepository) {}
@@ -24,6 +25,10 @@ export class AddSaleItemUseCase {
       rolePermissions.sale.AddSaleItemUseCase,
       'añadir item a venta'
     );
+
+    const sale = await this.saleRepo.findById(saleId);
+    if (!sale) throw new NotFoundError('Venta', saleId);
+    if (sale.empresaId !== currentUser.empresaId) throw new AuthorizationError('No tienes permiso para modificar esta venta');
 
     const added = await this.saleRepo.addItem(saleId, item);
 

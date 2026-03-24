@@ -31,6 +31,7 @@ describe('ClientPrismaRepository', () => {
     businessName: 'Doe Corp',
     createdAt: new Date('2024-01-01'),
     lastModified: new Date('2024-01-02'),
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   beforeEach(() => {
@@ -123,12 +124,13 @@ describe('ClientPrismaRepository', () => {
     it('should find clients by phone', async () => {
       (prisma.client.findMany as jest.Mock).mockResolvedValue([mockClientData]);
 
-      const result = await repository.getByPhoneOrDNI('1234567890');
+      const result = await repository.getByPhoneOrDNI('1234567890', '00000000-0000-0000-0000-000000000001');
 
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(Client);
       expect(prisma.client.findMany).toHaveBeenCalledWith({
         where: {
+          empresaId: '00000000-0000-0000-0000-000000000001',
           OR: [{ phones: { has: '1234567890' } }, { dni: '1234567890' }],
         },
       });
@@ -137,7 +139,7 @@ describe('ClientPrismaRepository', () => {
     it('should find clients by DNI', async () => {
       (prisma.client.findMany as jest.Mock).mockResolvedValue([mockClientData]);
 
-      const result = await repository.getByPhoneOrDNI('12345678');
+      const result = await repository.getByPhoneOrDNI('12345678', '00000000-0000-0000-0000-000000000001');
 
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(Client);
@@ -146,7 +148,7 @@ describe('ClientPrismaRepository', () => {
     it('should return empty array when no clients found', async () => {
       (prisma.client.findMany as jest.Mock).mockResolvedValue([]);
 
-      const result = await repository.getByPhoneOrDNI('nonexistent');
+      const result = await repository.getByPhoneOrDNI('nonexistent', '00000000-0000-0000-0000-000000000001');
 
       expect(result).toEqual([]);
     });
@@ -155,7 +157,7 @@ describe('ClientPrismaRepository', () => {
       const client2 = { ...mockClientData, id: 'client-456' };
       (prisma.client.findMany as jest.Mock).mockResolvedValue([mockClientData, client2]);
 
-      const result = await repository.getByPhoneOrDNI('1234567890');
+      const result = await repository.getByPhoneOrDNI('1234567890', '00000000-0000-0000-0000-000000000001');
 
       expect(result).toHaveLength(2);
     });
@@ -164,7 +166,7 @@ describe('ClientPrismaRepository', () => {
       const clientWithNulls = { ...mockClientData, authorized: null, businessName: null };
       (prisma.client.findMany as jest.Mock).mockResolvedValue([clientWithNulls]);
 
-      const result = await repository.getByPhoneOrDNI('1234567890');
+      const result = await repository.getByPhoneOrDNI('1234567890', '00000000-0000-0000-0000-000000000001');
 
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(Client);
@@ -174,7 +176,7 @@ describe('ClientPrismaRepository', () => {
       const error = new Error('Database error');
       (prisma.client.findMany as jest.Mock).mockRejectedValue(error);
 
-      await expect(repository.getByPhoneOrDNI('1234567890')).rejects.toThrow(error);
+      await expect(repository.getByPhoneOrDNI('1234567890', '00000000-0000-0000-0000-000000000001')).rejects.toThrow(error);
     });
   });
 });

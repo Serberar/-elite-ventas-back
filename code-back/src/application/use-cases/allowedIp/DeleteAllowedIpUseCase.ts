@@ -13,6 +13,6 @@ export class DeleteAllowedIpUseCase {
       'eliminar IP permitida'
     );
 
-    await this.repo.delete(id);
+    await this.repo.delete(id, currentUser.empresaId);
   }
 }

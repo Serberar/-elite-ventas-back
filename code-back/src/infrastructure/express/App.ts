@@ -3,9 +3,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
+import path from 'path';
 import ip from 'ip';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from '@infrastructure/express/swagger/swaggerConfig';
+import { RECORDS_DIR } from '@infrastructure/express/middleware/uploadMiddleware';
 
 // Routes
 import userRoutes from '@infrastructure/routes/userRoutes';
@@ -19,6 +21,7 @@ import settingsRoutes from '@infrastructure/routes/settingsRoutes';
 import { saleSignatureRouter, webhookRouter } from '@infrastructure/routes/signatureRoutes';
 import contractConfigRoutes from '@infrastructure/routes/contractConfigRoutes';
 import contractTemplateRoutes from '@infrastructure/routes/contractTemplateRoutes';
+import empresaRoutes from '@infrastructure/routes/empresaRoutes';
 
 // Middleware
 import logger, { morganStream } from '@infrastructure/observability/logger/logger';
@@ -30,6 +33,7 @@ import {
   metricsHandler,
 } from '@infrastructure/observability/metrics/prometheusMetrics';
 import { serviceContainer } from '@infrastructure/container/ServiceContainer';
+import { prisma } from '@infrastructure/prisma/prismaClient';
 
 /**
  * Configuración de la aplicación Express
@@ -85,8 +89,11 @@ export class App {
     return async (req: Request, res: Response, next: NextFunction) => {
       try {
         // Filtrado desactivado desde la UI → pasar todo
-        const filteringEnabled = await serviceContainer.systemSettingRepository.getBool('ip_filter_enabled');
-        if (!filteringEnabled) return next();
+        // Comprobamos si alguna empresa tiene el filtro activo (corre antes de auth, sin empresaId conocido)
+        const filterRow = await prisma.systemSetting.findFirst({
+          where: { key: 'ip_filter_enabled', value: 'true' },
+        });
+        if (!filterRow) return next();
 
         const clientIp = this.normalizeIp(req.ip);
 
@@ -160,6 +167,14 @@ export class App {
    * Configuración de rutas
    */
   private configureRoutes(): void {
+    // === Archivos estáticos (logos, grabaciones, etc.) ===
+    // Override Helmet's Cross-Origin-Resource-Policy para permitir carga cross-origin de imágenes
+    this.app.use('/uploads', (_req, res, next) => {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      next();
+    });
+    this.app.use('/uploads', express.static(path.resolve(RECORDS_DIR)));
+
     // === Favicon: silenciar petición automática del navegador ===
     this.app.get('/favicon.ico', (_req, res) => res.status(204).end());
 
@@ -183,6 +198,7 @@ export class App {
     this.app.use('/api/settings', settingsRoutes);
     this.app.use('/api/contract-config', contractConfigRoutes);
     this.app.use('/api/contract-templates', contractTemplateRoutes);
+    this.app.use('/api/empresas', empresaRoutes);
 
     // === Health checks ===
     this.app.use('/', healthRoutes);

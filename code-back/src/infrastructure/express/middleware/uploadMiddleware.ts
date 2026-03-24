@@ -58,16 +58,20 @@ export const uploadRecording = multer({
 const LOGO_ALLOWED_MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 const LOGO_MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
+const LOGOS_DIR = path.join(RECORDS_DIR, 'logos');
+
 const logoStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    fs.mkdirSync(RECORDS_DIR, { recursive: true });
-    cb(null, RECORDS_DIR);
+    fs.mkdirSync(LOGOS_DIR, { recursive: true });
+    cb(null, LOGOS_DIR);
   },
-  filename: (_req, file, cb) => {
+  filename: (req: Request, file, cb) => {
+    const empresaId = (req.params as Record<string, string>).id || uuid();
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
-    cb(null, `contract-logo${ext}`);
+    cb(null, `empresa-${empresaId}${ext}`);
   },
 });
+
 
 const logoFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   if (LOGO_ALLOWED_MIMES.includes(file.mimetype)) {
@@ -135,4 +139,4 @@ export const uploadTemplateDocx = multer({
   limits: { fileSize: DOCX_MAX_SIZE },
 });
 
-export { RECORDS_DIR, ALLOWED_MIMES, MAX_SIZE };
+export { RECORDS_DIR, LOGOS_DIR, ALLOWED_MIMES, MAX_SIZE };

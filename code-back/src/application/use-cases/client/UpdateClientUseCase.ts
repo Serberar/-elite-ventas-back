@@ -3,7 +3,7 @@ import { Client, AddressInfo } from '@domain/entities/Client';
 import { CurrentUser } from '@application/shared/types/CurrentUser';
 import { checkRolePermission } from '@application/shared/authorization/checkRolePermission';
 import { rolePermissions } from '@application/shared/authorization/rolePermissions';
-import { NotFoundError } from '@application/shared/AppError';
+import { NotFoundError, AuthorizationError } from '@application/shared/AppError';
 
 interface UpdateClientDTO {
   id: string;
@@ -36,6 +36,10 @@ export class UpdateClientUseCase {
       throw new NotFoundError('Cliente', data.id);
     }
 
+    if (existingClient.empresaId !== currentUser.empresaId) {
+      throw new AuthorizationError('No tienes permiso para modificar este cliente');
+    }
+
     const updatedClient = new Client(
       existingClient.id,
       data.firstName ?? existingClient.firstName,
@@ -50,7 +54,8 @@ export class UpdateClientUseCase {
       data.authorized ?? existingClient.authorized,
       data.businessName ?? existingClient.businessName,
       existingClient.createdAt,
-      new Date() // lastModified actualizado
+      new Date(), // lastModified actualizado
+      existingClient.empresaId
     );
 
     await this.clientRepo.update(updatedClient);

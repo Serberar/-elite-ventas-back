@@ -18,6 +18,7 @@ describe('GetProductUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Test',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockProduct = new Product(
@@ -28,7 +29,13 @@ describe('GetProductUseCase', () => {
     99.99,
     true,
     new Date('2024-01-01'),
-    new Date('2024-01-01')
+    new Date('2024-01-01'),
+    'unico',
+    null,
+    null,
+    null,
+    null,
+    '00000000-0000-0000-0000-000000000001'
   );
 
   beforeEach(() => {
@@ -66,11 +73,12 @@ describe('GetProductUseCase', () => {
       expect(mockRepository.findById).toHaveBeenCalledWith('non-existent-id');
     });
 
-    it('should work with verificador role', async () => {
+    it('should work with coordinador role', async () => {
       const userWithPermission: CurrentUser = {
         id: 'user-456',
-        role: 'verificador',
+        role: 'coordinador',
         firstName: 'Viewer',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       mockRepository.findById.mockResolvedValue(mockProduct);
@@ -86,6 +94,7 @@ describe('GetProductUseCase', () => {
         id: 'user-789',
         role: 'coordinador',
         firstName: 'Manager',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       mockRepository.findById.mockResolvedValue(mockProduct);
@@ -100,6 +109,7 @@ describe('GetProductUseCase', () => {
         id: 'user-999',
         role: 'comercial',
         firstName: 'User',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       mockRepository.findById.mockResolvedValue(mockProduct);
@@ -115,6 +125,7 @@ describe('GetProductUseCase', () => {
         id: 'user-999',
         role: 'unknown_role' as any,
         firstName: 'User',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute('product-123', unknownUser)).rejects.toThrow(
@@ -139,7 +150,13 @@ describe('GetProductUseCase', () => {
         99.99,
         false,
         new Date('2024-01-01'),
-        new Date('2024-01-01')
+        new Date('2024-01-01'),
+        'unico',
+        null,
+        null,
+        null,
+        null,
+        '00000000-0000-0000-0000-000000000001'
       );
 
       mockRepository.findById.mockResolvedValue(inactiveProduct);
@@ -159,7 +176,13 @@ describe('GetProductUseCase', () => {
         99.99,
         true,
         new Date('2024-01-01'),
-        new Date('2024-01-01')
+        new Date('2024-01-01'),
+        'unico',
+        null,
+        null,
+        null,
+        null,
+        '00000000-0000-0000-0000-000000000001'
       );
 
       mockRepository.findById.mockResolvedValue(productWithNulls);
@@ -182,7 +205,13 @@ describe('GetProductUseCase', () => {
         99.99,
         true,
         new Date('2024-01-01'),
-        new Date('2024-01-01')
+        new Date('2024-01-01'),
+        'unico',
+        null,
+        null,
+        null,
+        null,
+        '00000000-0000-0000-0000-000000000001'
       );
 
       mockRepository.findById.mockResolvedValue(productWithUuid);

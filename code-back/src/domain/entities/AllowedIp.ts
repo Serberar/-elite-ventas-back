@@ -3,7 +3,8 @@ export class AllowedIp {
     public readonly id: string,
     public readonly ip: string,
     public readonly description: string | null,
-    public readonly createdAt: Date
+    public readonly createdAt: Date,
+    public readonly empresaId: string = ''
   ) {}
 
   static fromPrisma(data: {
@@ -11,7 +12,8 @@ export class AllowedIp {
     ip: string;
     description: string | null;
     createdAt: Date;
+    empresaId: string;
   }): AllowedIp {
-    return new AllowedIp(data.id, data.ip, data.description, data.createdAt);
+    return new AllowedIp(data.id, data.ip, data.description, data.createdAt, data.empresaId);
   }
 }

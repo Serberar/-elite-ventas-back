@@ -14,21 +14,24 @@ describe('HandleSignatureWebhookUseCase', () => {
   let mockSaleStatusRepo: jest.Mocked<ISaleStatusRepository>;
 
   const pendingRequest = new SignatureRequest(
-    'sig-1', 'sale-123', 'pending', 'client@example.com',
+    'sig-1', 'sale-123', 'contract',
+      'pending', 'client@example.com',
     'doc-provider-123', null, null,
     new Date('2024-01-01'), null, null,
     new Date('2024-01-01'), new Date('2024-01-01')
   );
 
   const signedRequest = new SignatureRequest(
-    'sig-1', 'sale-123', 'signed', 'client@example.com',
+    'sig-1', 'sale-123', 'contract',
+      'signed', 'client@example.com',
     'doc-provider-123', 'https://signed.url', null,
     new Date('2024-01-01'), new Date('2024-01-15'), null,
     new Date('2024-01-01'), new Date('2024-01-15')
   );
 
   const rejectedRequest = new SignatureRequest(
-    'sig-1', 'sale-123', 'rejected', 'client@example.com',
+    'sig-1', 'sale-123', 'contract',
+      'rejected', 'client@example.com',
     'doc-provider-123', null, 'Client rejected',
     new Date('2024-01-01'), null, new Date('2024-01-10'),
     new Date('2024-01-01'), new Date('2024-01-10')
@@ -49,6 +52,7 @@ describe('HandleSignatureWebhookUseCase', () => {
       create: jest.fn(),
       findById: jest.fn(),
       findBySaleId: jest.fn(),
+      findBySaleIdAndType: jest.fn(),
       findByProviderDocumentId: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),

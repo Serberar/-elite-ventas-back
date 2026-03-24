@@ -13,6 +13,6 @@ export class ListSaleStatusUseCase {
       'listar estados de venta'
     );
 
-    return this.statusRepo.list();
+    return this.statusRepo.list(currentUser.empresaId);
   }
 }

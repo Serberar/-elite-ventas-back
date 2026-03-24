@@ -53,7 +53,7 @@ describe('SaleController', () => {
   let statusMock: jest.Mock;
   let jsonMock: jest.Mock;
 
-  const currentUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin' };
+  const currentUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin', empresaId: '00000000-0000-0000-0000-000000000001' };
 
   beforeEach(() => {
     statusMock = jest.fn().mockReturnThis();

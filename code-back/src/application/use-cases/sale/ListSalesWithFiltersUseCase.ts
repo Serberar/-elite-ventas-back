@@ -14,6 +14,6 @@ export class ListSalesWithFiltersUseCase {
       'listar ventas con filtros'
     );
 
-    return this.saleRepo.list(filters);
+    return this.saleRepo.list({ ...filters, empresaId: currentUser.empresaId });
   }
 }

@@ -7,7 +7,7 @@ export interface IUserRepository {
   updateLastLogin(userId: string, date: Date): Promise<void>;
   findByUsername(username: string): Promise<User | null>;
   findById(id: string): Promise<User | null>;
-  findAll(): Promise<User[]>;
+  findAll(empresaId?: string): Promise<User[]>;
   saveRefreshToken(userId: string, token: string, expiresAt: Date): Promise<void>;
   findByRefreshToken(token: string): Promise<User | null>;
   clearRefreshToken(userId: string): Promise<void>;

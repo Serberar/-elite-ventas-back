@@ -26,6 +26,7 @@ describe('CreateProductUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Test',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockProductData = {
@@ -118,8 +119,9 @@ describe('CreateProductUseCase', () => {
     it('should throw AuthorizationError when user lacks permission', async () => {
       const userWithoutPermission: CurrentUser = {
         id: 'user-456',
-        role: 'verificador',
+        role: 'comercial',
         firstName: 'Viewer',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute(mockProductData, userWithoutPermission)).rejects.toThrow(
@@ -162,8 +164,8 @@ describe('CreateProductUseCase', () => {
       await expect(useCase.execute(mockProductData, mockUser)).rejects.toThrow(dbError);
     });
 
-    it('should only work with administrador role', async () => {
-      // Verify that only administrador role can create products
+    it('should work with both administrador and coordinador roles', async () => {
+      // Verify that administrador can create products
       mockRepository.create.mockResolvedValue(mockProduct);
 
       const result = await useCase.execute(mockProductData, mockUser);
@@ -171,16 +173,18 @@ describe('CreateProductUseCase', () => {
       expect(result).toEqual(mockProduct);
       expect(mockRepository.create).toHaveBeenCalled();
 
-      // Verify other roles cannot create
+      // Verify coordinador can also create
       const coordinadorUser: CurrentUser = {
         id: 'user-789',
         role: 'coordinador',
         firstName: 'Coordinador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
-      await expect(useCase.execute(mockProductData, coordinadorUser)).rejects.toThrow(
-        AuthorizationError
-      );
+      mockRepository.create.mockResolvedValue(mockProduct);
+
+      const result2 = await useCase.execute(mockProductData, coordinadorUser);
+      expect(result2).toEqual(mockProduct);
     });
 
     it('should handle numeric price correctly', async () => {

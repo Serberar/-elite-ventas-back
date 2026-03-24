@@ -24,6 +24,7 @@ describe('ToggleProductActiveUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Test',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockProduct = new Product(
@@ -34,7 +35,13 @@ describe('ToggleProductActiveUseCase', () => {
     99.99,
     true,
     new Date('2024-01-01'),
-    new Date('2024-01-01')
+    new Date('2024-01-01'),
+    'unico',
+    null,
+    null,
+    null,
+    null,
+    '00000000-0000-0000-0000-000000000001'
   );
 
   beforeEach(() => {
@@ -86,7 +93,13 @@ describe('ToggleProductActiveUseCase', () => {
         99.99,
         false,
         new Date('2024-01-01'),
-        new Date('2024-01-01')
+        new Date('2024-01-01'),
+        'unico',
+        null,
+        null,
+        null,
+        null,
+        '00000000-0000-0000-0000-000000000001'
       );
 
       const toggledProduct = new Product(
@@ -122,6 +135,7 @@ describe('ToggleProductActiveUseCase', () => {
         id: 'user-456',
         role: 'comercial',
         firstName: 'User',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(
@@ -130,17 +144,30 @@ describe('ToggleProductActiveUseCase', () => {
       expect(mockRepository.findById).not.toHaveBeenCalled();
     });
 
-    it('should throw AuthorizationError for coordinador role', async () => {
+    it('should work with coordinador role', async () => {
       const managerUser: CurrentUser = {
         id: 'user-789',
         role: 'coordinador',
         firstName: 'Manager',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
-      await expect(
-        useCase.execute({ id: 'product-123' }, managerUser)
-      ).rejects.toThrow(AuthorizationError);
-      expect(mockRepository.findById).not.toHaveBeenCalled();
+      const toggledProduct = new Product(
+        'product-123',
+        'Test Product',
+        'Test Description',
+        'SKU-123',
+        99.99,
+        false,
+        new Date('2024-01-01'),
+        new Date()
+      );
+
+      mockRepository.findById.mockResolvedValue(mockProduct);
+      mockRepository.toggleActive.mockResolvedValue(toggledProduct);
+
+      const result = await useCase.execute({ id: 'product-123' }, managerUser);
+      expect(result.active).toBe(false);
     });
 
     it('should handle repository errors on findById', async () => {
@@ -193,7 +220,13 @@ describe('ToggleProductActiveUseCase', () => {
         99.99,
         true,
         new Date('2024-01-01'),
-        new Date('2024-01-01')
+        new Date('2024-01-01'),
+        'unico',
+        null,
+        null,
+        null,
+        null,
+        '00000000-0000-0000-0000-000000000001'
       );
       const toggledProduct = new Product(
         uuidId,

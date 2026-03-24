@@ -7,7 +7,7 @@ import { Sale } from '@domain/entities/Sale';
 import { checkRolePermission } from '@application/shared/authorization/checkRolePermission';
 import { rolePermissions } from '@application/shared/authorization/rolePermissions';
 import { businessSaleStatusChanged } from '@infrastructure/observability/metrics/prometheusMetrics';
-import { NotFoundError, ValidationError } from '@application/shared/AppError';
+import { NotFoundError, ValidationError, AuthorizationError } from '@application/shared/AppError';
 
 export class ChangeSaleStatusUseCase {
   constructor(
@@ -25,6 +25,7 @@ export class ChangeSaleStatusUseCase {
 
     const sale = await this.saleRepo.findById(dto.saleId);
     if (!sale) throw new NotFoundError('Venta', dto.saleId);
+    if (sale.empresaId !== currentUser.empresaId) throw new AuthorizationError('No tienes permiso para modificar esta venta');
 
     const status = await this.statusRepo.findById(dto.statusId);
     if (!status) throw new NotFoundError('Estado', dto.statusId);

@@ -1,5 +1,6 @@
 import { UpdateSaleItemUseCase } from '@application/use-cases/sale/UpdateSaleItemUseCase';
 import { ISaleRepository } from '@domain/repositories/ISaleRepository';
+import { Sale } from '@domain/entities/Sale';
 import { CurrentUser } from '@application/shared/types/CurrentUser';
 import { AuthorizationError } from '@application/shared/AppError';
 
@@ -17,7 +18,13 @@ describe('UpdateSaleItemUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
+
+  const mockSale = new Sale(
+    'sale-123', 'client-1', 'status-1', 100, null, null, null, null, null,
+    new Date('2024-01-01'), new Date('2024-01-01'), null, '00000000-0000-0000-0000-000000000001'
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -41,6 +48,7 @@ describe('UpdateSaleItemUseCase', () => {
       getDistinctComerciales: jest.fn(),
     };
 
+    mockRepository.findById.mockResolvedValue(mockSale);
     useCase = new UpdateSaleItemUseCase(mockRepository);
   });
 
@@ -103,7 +111,7 @@ describe('UpdateSaleItemUseCase', () => {
     });
 
     it('should work with coordinador role', async () => {
-      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C' };
+      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C', empresaId: '00000000-0000-0000-0000-000000000001' };
       const dto = { saleId: 'sale-123', items: [{ id: 'item-1', unitPrice: 100, quantity: 1, finalPrice: 100 }] };
       mockRepository.updateItem.mockResolvedValue({} as any);
       mockRepository.addHistory.mockResolvedValue({} as any);
@@ -113,12 +121,15 @@ describe('UpdateSaleItemUseCase', () => {
       expect(mockRepository.updateItem).toHaveBeenCalled();
     });
 
-    it('should throw AuthorizationError for comercial role', async () => {
-      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com' };
+    it('should work with comercial role', async () => {
+      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
       const dto = { saleId: 'sale-123', items: [{ id: 'item-1', unitPrice: 100, quantity: 1, finalPrice: 100 }] };
 
-      await expect(useCase.execute(dto, comercialUser)).rejects.toThrow(AuthorizationError);
-      expect(mockRepository.updateItem).not.toHaveBeenCalled();
+      mockRepository.updateItem.mockResolvedValue({} as any);
+      mockRepository.addHistory.mockResolvedValue({} as any);
+
+      await useCase.execute(dto, comercialUser);
+      expect(mockRepository.updateItem).toHaveBeenCalled();
     });
 
     it('should handle empty items array without error', async () => {

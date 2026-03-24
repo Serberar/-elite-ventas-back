@@ -40,7 +40,7 @@ export class CreateSaleWithProductsUseCase {
     // Obtener status inicial si no viene en DTO
     let statusId = dto.statusId;
     if (!statusId) {
-      const initialStatus = await this.saleStatusRepo.findInitialStatus();
+      const initialStatus = await this.saleStatusRepo.findInitialStatus(currentUser.empresaId);
       if (!initialStatus?.id) {
         throw new ValidationError('No se encontró un estado inicial para las ventas');
       }
@@ -123,6 +123,7 @@ export class CreateSaleWithProductsUseCase {
       clientSnapshot,
       addressSnapshot,
       comercial: dto.comercial ?? null,
+      empresaId: currentUser.empresaId,
       items: preparedItems,
       history: {
         userId: currentUser.id,

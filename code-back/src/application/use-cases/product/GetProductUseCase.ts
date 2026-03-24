@@ -4,7 +4,7 @@ import { CurrentUser } from '@application/shared/types/CurrentUser';
 import { checkRolePermission } from '@application/shared/authorization/checkRolePermission';
 import { rolePermissions } from '@application/shared/authorization/rolePermissions';
 import logger from '@infrastructure/observability/logger/logger';
-import { NotFoundError } from '@application/shared/AppError';
+import { NotFoundError, AuthorizationError } from '@application/shared/AppError';
 
 export class GetProductUseCase {
   constructor(private readonly repository: IProductRepository) {}
@@ -16,6 +16,10 @@ export class GetProductUseCase {
 
     const product = await this.repository.findById(id);
     if (!product) throw new NotFoundError('Producto', id);
+
+    if (product.empresaId !== currentUser.empresaId) {
+      throw new AuthorizationError('No tienes permiso para ver este producto');
+    }
 
     return product;
   }

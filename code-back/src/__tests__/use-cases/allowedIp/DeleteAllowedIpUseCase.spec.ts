@@ -11,6 +11,7 @@ describe('DeleteAllowedIpUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   beforeEach(() => {
@@ -32,7 +33,7 @@ describe('DeleteAllowedIpUseCase', () => {
 
       await useCase.execute('ip-123', mockUser);
 
-      expect(mockRepository.delete).toHaveBeenCalledWith('ip-123');
+      expect(mockRepository.delete).toHaveBeenCalledWith('ip-123', '00000000-0000-0000-0000-000000000001');
     });
 
     it('should not return a value', async () => {
@@ -48,17 +49,19 @@ describe('DeleteAllowedIpUseCase', () => {
         id: 'user-456',
         role: 'coordinador',
         firstName: 'Coordinador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute('ip-123', coordinadorUser)).rejects.toThrow(AuthorizationError);
       expect(mockRepository.delete).not.toHaveBeenCalled();
     });
 
-    it('should throw AuthorizationError for verificador role', async () => {
+    it('should throw AuthorizationError for coordinador role', async () => {
       const verificadorUser: CurrentUser = {
         id: 'user-789',
-        role: 'verificador',
+        role: 'coordinador',
         firstName: 'Verificador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute('ip-123', verificadorUser)).rejects.toThrow(AuthorizationError);
@@ -69,6 +72,7 @@ describe('DeleteAllowedIpUseCase', () => {
         id: 'user-999',
         role: 'comercial',
         firstName: 'Comercial',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute('ip-123', comercialUser)).rejects.toThrow(AuthorizationError);
@@ -86,7 +90,7 @@ describe('DeleteAllowedIpUseCase', () => {
 
       await useCase.execute('specific-ip-id', mockUser);
 
-      expect(mockRepository.delete).toHaveBeenCalledWith('specific-ip-id');
+      expect(mockRepository.delete).toHaveBeenCalledWith('specific-ip-id', '00000000-0000-0000-0000-000000000001');
       expect(mockRepository.delete).toHaveBeenCalledTimes(1);
     });
   });

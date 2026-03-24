@@ -1,5 +1,6 @@
 import { AddSaleItemUseCase } from '@application/use-cases/sale/AddSaleItemUseCase';
 import { ISaleRepository } from '@domain/repositories/ISaleRepository';
+import { Sale } from '@domain/entities/Sale';
 import { SaleItem } from '@domain/entities/SaleItem';
 import { CurrentUser } from '@application/shared/types/CurrentUser';
 import { AuthorizationError } from '@application/shared/AppError';
@@ -24,7 +25,13 @@ describe('AddSaleItemUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Test',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
+
+  const mockSale = new Sale(
+    'sale-123', 'client-1', 'status-1', 100, null, null, null, null, null,
+    new Date('2024-01-01'), new Date('2024-01-01'), null, '00000000-0000-0000-0000-000000000001'
+  );
 
   const mockItem = {
     productId: 'product-1',
@@ -70,6 +77,7 @@ describe('AddSaleItemUseCase', () => {
       getDistinctComerciales: jest.fn(),
     };
 
+    mockRepository.findById.mockResolvedValue(mockSale);
     useCase = new AddSaleItemUseCase(mockRepository);
   });
 
@@ -123,6 +131,7 @@ describe('AddSaleItemUseCase', () => {
         id: 'user-456',
         role: 'coordinador',
         firstName: 'Coordinador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       mockRepository.addItem.mockResolvedValue(mockSaleItem);
@@ -133,11 +142,12 @@ describe('AddSaleItemUseCase', () => {
       expect(result).toEqual(mockSaleItem);
     });
 
-    it('should work with verificador role', async () => {
+    it('should work with coordinador role', async () => {
       const verificadorUser: CurrentUser = {
         id: 'user-789',
-        role: 'verificador',
+        role: 'coordinador',
         firstName: 'Verificador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       mockRepository.addItem.mockResolvedValue(mockSaleItem);
@@ -148,17 +158,19 @@ describe('AddSaleItemUseCase', () => {
       expect(result).toEqual(mockSaleItem);
     });
 
-    it('should throw AuthorizationError for comercial role', async () => {
+    it('should work with comercial role', async () => {
       const comercialUser: CurrentUser = {
         id: 'user-999',
         role: 'comercial',
         firstName: 'Comercial',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
-      await expect(useCase.execute('sale-123', mockItem, comercialUser)).rejects.toThrow(
-        AuthorizationError
-      );
-      expect(mockRepository.addItem).not.toHaveBeenCalled();
+      mockRepository.addItem.mockResolvedValue(mockSaleItem);
+      mockRepository.addHistory.mockResolvedValue({} as any);
+
+      const result = await useCase.execute('sale-123', mockItem, comercialUser);
+      expect(result).toEqual(mockSaleItem);
     });
 
     it('should handle repository errors on addItem', async () => {

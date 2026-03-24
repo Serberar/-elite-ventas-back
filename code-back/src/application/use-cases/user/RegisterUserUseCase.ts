@@ -12,7 +12,8 @@ export class RegisterUserUseCase {
     lastName: string;
     username: string;
     password: string;
-    role: 'administrador' | 'gestor' | 'comercial';
+    role: 'administrador' | 'coordinador' | 'comercial';
+    empresaId: string;
   }): Promise<User> {
     logger.info(`Intentando registrar usuario: ${data.username}`);
 
@@ -33,7 +34,8 @@ export class RegisterUserUseCase {
       data.lastName,
       data.username,
       hashedPassword,
-      data.role
+      data.role,
+      data.empresaId
     );
 
     await this.userRepository.create(user);

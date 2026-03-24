@@ -6,7 +6,8 @@ export class SaleStatus {
     public readonly color: string | null,
     public readonly isFinal: boolean,
     public readonly isCancelled: boolean,
-    public readonly isSystem: boolean
+    public readonly isSystem: boolean,
+    public readonly empresaId: string = ''
   ) {}
 
   static fromPrisma(data: {
@@ -17,6 +18,7 @@ export class SaleStatus {
     isFinal: boolean;
     isCancelled: boolean;
     isSystem: boolean;
+    empresaId: string;
   }): SaleStatus {
     return new SaleStatus(
       data.id,
@@ -25,7 +27,8 @@ export class SaleStatus {
       data.color,
       data.isFinal,
       data.isCancelled,
-      data.isSystem
+      data.isSystem,
+      data.empresaId
     );
   }
 
@@ -37,6 +40,7 @@ export class SaleStatus {
     isFinal: boolean;
     isCancelled: boolean;
     isSystem: boolean;
+    empresaId: string;
   } {
     return {
       id: this.id,
@@ -46,6 +50,7 @@ export class SaleStatus {
       isFinal: this.isFinal,
       isCancelled: this.isCancelled,
       isSystem: this.isSystem,
+      empresaId: this.empresaId,
     };
   }
 }

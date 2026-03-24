@@ -12,6 +12,7 @@ describe('ListAllowedIpsUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockIps: AllowedIp[] = [
@@ -57,17 +58,19 @@ describe('ListAllowedIpsUseCase', () => {
         id: 'user-456',
         role: 'coordinador',
         firstName: 'Coordinador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute(coordinadorUser)).rejects.toThrow(AuthorizationError);
       expect(mockRepository.list).not.toHaveBeenCalled();
     });
 
-    it('should throw AuthorizationError for verificador role', async () => {
+    it('should throw AuthorizationError for coordinador role', async () => {
       const verificadorUser: CurrentUser = {
         id: 'user-789',
-        role: 'verificador',
+        role: 'coordinador',
         firstName: 'Verificador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute(verificadorUser)).rejects.toThrow(AuthorizationError);
@@ -78,6 +81,7 @@ describe('ListAllowedIpsUseCase', () => {
         id: 'user-999',
         role: 'comercial',
         firstName: 'Comercial',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute(comercialUser)).rejects.toThrow(AuthorizationError);

@@ -8,6 +8,7 @@ export class User {
     public readonly username: string,
     public readonly password: string,
     public readonly role: string,
+    public readonly empresaId: string = '',
     public readonly active: boolean = true,
     public readonly failedLoginAttempts: number = 0,
     public readonly createdAt: Date = new Date(),
@@ -23,6 +24,7 @@ export class User {
     username: string;
     password: string;
     role: Role;
+    empresaId: string;
     active: boolean;
     failedLoginAttempts: number;
     createdAt: Date;
@@ -37,6 +39,7 @@ export class User {
       data.username,
       data.password,
       data.role,
+      data.empresaId,
       data.active,
       data.failedLoginAttempts,
       data.createdAt,
@@ -53,6 +56,7 @@ export class User {
     username: string;
     password: string;
     role: Role;
+    empresaId: string;
     active: boolean;
     failedLoginAttempts: number;
     lastLoginAt?: Date;
@@ -66,6 +70,7 @@ export class User {
       username: this.username,
       password: this.password,
       role: this.role as Role,
+      empresaId: this.empresaId,
       active: this.active,
       failedLoginAttempts: this.failedLoginAttempts,
       lastLoginAt: this.lastLoginAt ?? undefined,

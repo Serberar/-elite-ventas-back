@@ -14,12 +14,13 @@ describe('UpdateClientSnapshotUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockSale = new Sale(
     'sale-123', 'client-1', 'status-1', 100, null, null,
     { firstName: 'John', lastName: 'Doe' }, null, null,
-    new Date('2024-01-01'), new Date('2024-01-01'), null
+    new Date('2024-01-01'), new Date('2024-01-01'), null, '00000000-0000-0000-0000-000000000001'
   );
 
   const mockClientSnapshot = { firstName: 'Jane', lastName: 'Smith', dni: '12345678Z' };
@@ -139,7 +140,7 @@ describe('UpdateClientSnapshotUseCase', () => {
     });
 
     it('should throw AuthorizationError for comercial role', async () => {
-      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com' };
+      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
 
       await expect(
         useCase.execute('sale-123', mockClientSnapshot, comercialUser)
@@ -147,7 +148,7 @@ describe('UpdateClientSnapshotUseCase', () => {
     });
 
     it('should work with coordinador role', async () => {
-      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C' };
+      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C', empresaId: '00000000-0000-0000-0000-000000000001' };
       mockRepository.findById.mockResolvedValue(mockSale);
       mockRepository.updateClientSnapshot.mockResolvedValue(mockSale);
       mockRepository.addHistory.mockResolvedValue({} as any);

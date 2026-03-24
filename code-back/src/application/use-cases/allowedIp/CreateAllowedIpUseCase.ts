@@ -17,6 +17,7 @@ export class CreateAllowedIpUseCase {
     return await this.repo.create({
       ip: dto.ip,
       description: dto.description ?? null,
+      empresaId: currentUser.empresaId,
     });
   }
 }

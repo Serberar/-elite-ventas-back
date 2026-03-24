@@ -49,10 +49,11 @@ export class ClientPrismaRepository implements IClientRepository {
     );
   }
 
-  async getByPhoneOrDNI(value: string): Promise<Client[]> {
+  async getByPhoneOrDNI(value: string, empresaId: string): Promise<Client[]> {
     const clientsData = await dbCircuitBreaker.execute(() =>
       prisma.client.findMany({
         where: {
+          empresaId,
           OR: [{ phones: { has: value } }, { dni: value }],
         },
       })

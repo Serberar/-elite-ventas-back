@@ -61,9 +61,20 @@ import { ResendSignatureRequestUseCase } from '@application/use-cases/signature/
 import { GetSignatureStatusUseCase } from '@application/use-cases/signature/GetSignatureStatusUseCase';
 import { HandleSignatureWebhookUseCase } from '@application/use-cases/signature/HandleSignatureWebhookUseCase';
 import { CancelSignatureRequestUseCase } from '@application/use-cases/signature/CancelSignatureRequestUseCase';
+import { GenerateAndSendConsentUseCase } from '@application/use-cases/signature/GenerateAndSendConsentUseCase';
+import { ResendConsentUseCase } from '@application/use-cases/signature/ResendConsentUseCase';
+import { GetConsentStatusUseCase } from '@application/use-cases/signature/GetConsentStatusUseCase';
+import { CancelConsentUseCase } from '@application/use-cases/signature/CancelConsentUseCase';
 
 import { GetSystemSettingUseCase } from '@application/use-cases/settings/GetSystemSettingUseCase';
 import { SetSystemSettingUseCase } from '@application/use-cases/settings/SetSystemSettingUseCase';
+
+import { EmpresaPrismaRepository } from '@infrastructure/prisma/EmpresaPrismaRepository';
+import { CreateEmpresaUseCase } from '@application/use-cases/empresa/CreateEmpresaUseCase';
+import { GetEmpresaUseCase } from '@application/use-cases/empresa/GetEmpresaUseCase';
+import { ListEmpresasUseCase } from '@application/use-cases/empresa/ListEmpresasUseCase';
+import { UpdateEmpresaUseCase } from '@application/use-cases/empresa/UpdateEmpresaUseCase';
+import { SwitchEmpresaUseCase } from '@application/use-cases/user/SwitchEmpresaUseCase';
 
 import { HealthChecker } from '@infrastructure/express/health/HealthChecker';
 import { AppConfig, loadConfig } from '@infrastructure/config/AppConfig';
@@ -143,6 +154,14 @@ class ServiceContainer {
   private _getSystemSettingUseCase?: GetSystemSettingUseCase;
   private _setSystemSettingUseCase?: SetSystemSettingUseCase;
 
+  // Empresa
+  private _empresaRepository?: EmpresaPrismaRepository;
+  private _createEmpresaUseCase?: CreateEmpresaUseCase;
+  private _getEmpresaUseCase?: GetEmpresaUseCase;
+  private _listEmpresasUseCase?: ListEmpresasUseCase;
+  private _updateEmpresaUseCase?: UpdateEmpresaUseCase;
+  private _switchEmpresaUseCase?: SwitchEmpresaUseCase;
+
   // Repositorio y Casos de uso de Firma Electrónica
   private _signatureRequestRepository?: SignatureRequestPrismaRepository;
   private _mockSignatureProvider?: MockSignatureProvider;
@@ -154,6 +173,10 @@ class ServiceContainer {
   private _getSignatureStatusUseCase?: GetSignatureStatusUseCase;
   private _handleSignatureWebhookUseCase?: HandleSignatureWebhookUseCase;
   private _cancelSignatureRequestUseCase?: CancelSignatureRequestUseCase;
+  private _generateAndSendConsentUseCase?: GenerateAndSendConsentUseCase;
+  private _resendConsentUseCase?: ResendConsentUseCase;
+  private _getConsentStatusUseCase?: GetConsentStatusUseCase;
+  private _cancelConsentUseCase?: CancelConsentUseCase;
 
   private _healthChecker?: HealthChecker;
 
@@ -612,7 +635,6 @@ class ServiceContainer {
         this.signatureRequestRepository,
         this.signatureProvider,
         this.pdfGenerator,
-        this.systemSettingRepository
       );
     }
     return this._resendSignatureRequestUseCase;
@@ -649,6 +671,94 @@ class ServiceContainer {
       );
     }
     return this._cancelSignatureRequestUseCase;
+  }
+
+  get generateAndSendConsentUseCase(): GenerateAndSendConsentUseCase {
+    if (!this._generateAndSendConsentUseCase) {
+      this._generateAndSendConsentUseCase = new GenerateAndSendConsentUseCase(
+        this.saleRepository,
+        this.signatureRequestRepository,
+        this.signatureProvider
+      );
+    }
+    return this._generateAndSendConsentUseCase;
+  }
+
+  get resendConsentUseCase(): ResendConsentUseCase {
+    if (!this._resendConsentUseCase) {
+      this._resendConsentUseCase = new ResendConsentUseCase(
+        this.saleRepository,
+        this.signatureRequestRepository,
+        this.signatureProvider
+      );
+    }
+    return this._resendConsentUseCase;
+  }
+
+  get getConsentStatusUseCase(): GetConsentStatusUseCase {
+    if (!this._getConsentStatusUseCase) {
+      this._getConsentStatusUseCase = new GetConsentStatusUseCase(
+        this.signatureRequestRepository,
+        this.signatureProvider,
+        this.handleSignatureWebhookUseCase
+      );
+    }
+    return this._getConsentStatusUseCase;
+  }
+
+  get cancelConsentUseCase(): CancelConsentUseCase {
+    if (!this._cancelConsentUseCase) {
+      this._cancelConsentUseCase = new CancelConsentUseCase(
+        this.signatureRequestRepository,
+        this.signatureProvider,
+        this.saleRepository
+      );
+    }
+    return this._cancelConsentUseCase;
+  }
+
+  // REPOSITORIO: EMPRESA
+  get empresaRepository(): EmpresaPrismaRepository {
+    if (!this._empresaRepository) {
+      this._empresaRepository = new EmpresaPrismaRepository();
+    }
+    return this._empresaRepository;
+  }
+
+  // CASOS DE USO: EMPRESA
+  get createEmpresaUseCase(): CreateEmpresaUseCase {
+    if (!this._createEmpresaUseCase) {
+      this._createEmpresaUseCase = new CreateEmpresaUseCase(this.empresaRepository);
+    }
+    return this._createEmpresaUseCase;
+  }
+
+  get getEmpresaUseCase(): GetEmpresaUseCase {
+    if (!this._getEmpresaUseCase) {
+      this._getEmpresaUseCase = new GetEmpresaUseCase(this.empresaRepository);
+    }
+    return this._getEmpresaUseCase;
+  }
+
+  get listEmpresasUseCase(): ListEmpresasUseCase {
+    if (!this._listEmpresasUseCase) {
+      this._listEmpresasUseCase = new ListEmpresasUseCase(this.empresaRepository);
+    }
+    return this._listEmpresasUseCase;
+  }
+
+  get updateEmpresaUseCase(): UpdateEmpresaUseCase {
+    if (!this._updateEmpresaUseCase) {
+      this._updateEmpresaUseCase = new UpdateEmpresaUseCase(this.empresaRepository);
+    }
+    return this._updateEmpresaUseCase;
+  }
+
+  get switchEmpresaUseCase(): SwitchEmpresaUseCase {
+    if (!this._switchEmpresaUseCase) {
+      this._switchEmpresaUseCase = new SwitchEmpresaUseCase(this.empresaRepository, this.userRepository);
+    }
+    return this._switchEmpresaUseCase;
   }
 
   // SERVICIOS EXTERNOS
@@ -751,6 +861,14 @@ class ServiceContainer {
     this._getSystemSettingUseCase = undefined;
     this._setSystemSettingUseCase = undefined;
 
+    // Empresa
+    this._empresaRepository = undefined;
+    this._createEmpresaUseCase = undefined;
+    this._getEmpresaUseCase = undefined;
+    this._listEmpresasUseCase = undefined;
+    this._updateEmpresaUseCase = undefined;
+    this._switchEmpresaUseCase = undefined;
+
     // Firma Electrónica
     this._signatureRequestRepository = undefined;
     this._mockSignatureProvider = undefined;
@@ -762,6 +880,10 @@ class ServiceContainer {
     this._getSignatureStatusUseCase = undefined;
     this._handleSignatureWebhookUseCase = undefined;
     this._cancelSignatureRequestUseCase = undefined;
+    this._generateAndSendConsentUseCase = undefined;
+    this._resendConsentUseCase = undefined;
+    this._getConsentStatusUseCase = undefined;
+    this._cancelConsentUseCase = undefined;
 
     this._healthChecker = undefined;
 

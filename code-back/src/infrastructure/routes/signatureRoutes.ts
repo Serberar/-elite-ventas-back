@@ -54,6 +54,52 @@ saleSignatureRouter.post(
   SignatureController.fetchEvidenceFromProvider.bind(SignatureController)
 );
 
+// ─── CONSENT (Autorización de llamada) ─────────────────────────────────────
+
+// GET /api/sales/:saleId/consent — consultar estado de autorización de llamada
+saleSignatureRouter.get(
+  '/:saleId/consent',
+  authMiddleware,
+  SignatureController.getConsentStatus.bind(SignatureController)
+);
+
+// POST /api/sales/:saleId/consent/send — enviar autorización de llamada
+saleSignatureRouter.post(
+  '/:saleId/consent/send',
+  authMiddleware,
+  validateRequest(sendContractSchema),
+  SignatureController.sendConsent.bind(SignatureController)
+);
+
+// POST /api/sales/:saleId/consent/resend — reenviar autorización de llamada
+saleSignatureRouter.post(
+  '/:saleId/consent/resend',
+  authMiddleware,
+  validateRequest(resendContractSchema),
+  SignatureController.resendConsent.bind(SignatureController)
+);
+
+// DELETE /api/sales/:saleId/consent — cancelar autorización de llamada
+saleSignatureRouter.delete(
+  '/:saleId/consent',
+  authMiddleware,
+  SignatureController.cancelConsent.bind(SignatureController)
+);
+
+// POST /api/sales/:saleId/consent/evidence/fetch — descargar evidencia desde Lleida.net manualmente
+saleSignatureRouter.post(
+  '/:saleId/consent/evidence/fetch',
+  authMiddleware,
+  SignatureController.fetchConsentEvidenceFromProvider.bind(SignatureController)
+);
+
+// GET /api/sales/:saleId/consent/evidence — descargar evidencia de autorización
+saleSignatureRouter.get(
+  '/:saleId/consent/evidence',
+  authMiddleware,
+  SignatureController.getConsentEvidence.bind(SignatureController)
+);
+
 // ── Webhook (sin autenticación JWT, verificación por secret opcional) ──
 const webhookRouter = Router();
 

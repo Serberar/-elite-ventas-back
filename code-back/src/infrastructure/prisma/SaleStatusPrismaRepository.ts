@@ -16,12 +16,12 @@ export class SaleStatusPrismaRepository implements ISaleStatusRepository {
     return row ? SaleStatus.fromPrisma(row) : null;
   }
 
-  async list(): Promise<SaleStatus[]> {
+  async list(empresaId: string): Promise<SaleStatus[]> {
     return cacheService.getOrSet(
-      CACHE_KEYS.SALE_STATUSES,
+      `${CACHE_KEYS.SALE_STATUSES}:${empresaId}`,
       async () => {
         const rows = await dbCircuitBreaker.execute(() =>
-          prisma.saleStatus.findMany({ orderBy: { order: 'asc' } })
+          prisma.saleStatus.findMany({ where: { empresaId }, orderBy: { order: 'asc' } })
         );
         return rows.map((r) => SaleStatus.fromPrisma(r));
       },
@@ -29,14 +29,14 @@ export class SaleStatusPrismaRepository implements ISaleStatusRepository {
     );
   }
 
-  async findInitialStatus(): Promise<SaleStatus | null> {
+  async findInitialStatus(empresaId: string): Promise<SaleStatus | null> {
     return cacheService.getOrSet(
-      CACHE_KEYS.SALE_STATUS_INITIAL,
+      `${CACHE_KEYS.SALE_STATUS_INITIAL}:${empresaId}`,
       async () => {
         const row = await dbCircuitBreaker.execute(() =>
           prisma.saleStatus.findFirst({
             orderBy: { order: 'asc' },
-            where: { isFinal: false }
+            where: { isFinal: false, empresaId }
           })
         );
         return row ? SaleStatus.fromPrisma(row) : null;
@@ -51,6 +51,7 @@ export class SaleStatusPrismaRepository implements ISaleStatusRepository {
     color?: string | null;
     isFinal?: boolean;
     isCancelled?: boolean;
+    empresaId: string;
   }): Promise<SaleStatus> {
     const row = await dbCircuitBreaker.execute(() =>
       prisma.saleStatus.create({
@@ -60,6 +61,7 @@ export class SaleStatusPrismaRepository implements ISaleStatusRepository {
           color: data.color ?? null,
           isFinal: data.isFinal ?? false,
           isCancelled: data.isCancelled ?? false,
+          empresaId: data.empresaId,
         },
       })
     );

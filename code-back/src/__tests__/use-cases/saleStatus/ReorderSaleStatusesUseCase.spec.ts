@@ -12,6 +12,7 @@ describe('ReorderSaleStatusesUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const reorderedStatuses: SaleStatus[] = [
@@ -45,6 +46,7 @@ describe('ReorderSaleStatusesUseCase', () => {
           { id: 'status-3', order: 3 },
         ],
       };
+      mockRepository.list.mockResolvedValue(reorderedStatuses);
       mockRepository.reorder.mockResolvedValue(reorderedStatuses);
 
       const result = await useCase.execute(dto, mockUser);
@@ -55,6 +57,7 @@ describe('ReorderSaleStatusesUseCase', () => {
 
     it('should handle single status reorder', async () => {
       const dto = { statuses: [{ id: 'status-1', order: 1 }] };
+      mockRepository.list.mockResolvedValue(reorderedStatuses);
       mockRepository.reorder.mockResolvedValue([reorderedStatuses[0]]);
 
       const result = await useCase.execute(dto, mockUser);
@@ -68,6 +71,7 @@ describe('ReorderSaleStatusesUseCase', () => {
         { id: 'status-1', order: 2 },
         { id: 'status-2', order: 3 },
       ];
+      mockRepository.list.mockResolvedValue(reorderedStatuses);
       mockRepository.reorder.mockResolvedValue(reorderedStatuses);
 
       await useCase.execute({ statuses: orderList }, mockUser);
@@ -75,29 +79,34 @@ describe('ReorderSaleStatusesUseCase', () => {
       expect(mockRepository.reorder).toHaveBeenCalledWith(orderList);
     });
 
-    it('should throw AuthorizationError for coordinador role', async () => {
+    it('should work with coordinador role', async () => {
       const coordinadorUser: CurrentUser = {
         id: 'user-456',
         role: 'coordinador',
         firstName: 'Coordinador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
-      await expect(useCase.execute({ statuses: [] }, coordinadorUser)).rejects.toThrow(
-        AuthorizationError
-      );
-      expect(mockRepository.reorder).not.toHaveBeenCalled();
+      mockRepository.list.mockResolvedValue(reorderedStatuses);
+      mockRepository.reorder.mockResolvedValue(reorderedStatuses);
+
+      const result = await useCase.execute({ statuses: [{ id: 'status-1', order: 1 }, { id: 'status-2', order: 2 }, { id: 'status-3', order: 3 }] }, coordinadorUser);
+      expect(result).toEqual(reorderedStatuses);
     });
 
-    it('should throw AuthorizationError for verificador role', async () => {
+    it('should also work with coordinador role (duplicate check)', async () => {
       const verificadorUser: CurrentUser = {
         id: 'user-789',
-        role: 'verificador',
+        role: 'coordinador',
         firstName: 'Verificador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
-      await expect(useCase.execute({ statuses: [] }, verificadorUser)).rejects.toThrow(
-        AuthorizationError
-      );
+      mockRepository.list.mockResolvedValue(reorderedStatuses);
+      mockRepository.reorder.mockResolvedValue(reorderedStatuses);
+
+      const result = await useCase.execute({ statuses: [{ id: 'status-1', order: 1 }, { id: 'status-2', order: 2 }, { id: 'status-3', order: 3 }] }, verificadorUser);
+      expect(result).toEqual(reorderedStatuses);
     });
 
     it('should throw AuthorizationError for comercial role', async () => {
@@ -105,6 +114,7 @@ describe('ReorderSaleStatusesUseCase', () => {
         id: 'user-999',
         role: 'comercial',
         firstName: 'Comercial',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       await expect(useCase.execute({ statuses: [] }, comercialUser)).rejects.toThrow(
@@ -114,6 +124,7 @@ describe('ReorderSaleStatusesUseCase', () => {
 
     it('should handle repository errors', async () => {
       const dbError = new Error('Database error');
+      mockRepository.list.mockResolvedValue(reorderedStatuses);
       mockRepository.reorder.mockRejectedValue(dbError);
 
       await expect(

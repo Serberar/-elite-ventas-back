@@ -3,7 +3,7 @@ import { Client, AddressInfo } from '@domain/entities/Client';
 import { CurrentUser } from '@application/shared/types/CurrentUser';
 import { checkRolePermission } from '@application/shared/authorization/checkRolePermission';
 import { rolePermissions } from '@application/shared/authorization/rolePermissions';
-import { NotFoundError } from '@application/shared/AppError';
+import { NotFoundError, AuthorizationError } from '@application/shared/AppError';
 
 interface AppendClientDataDTO {
   id: string;
@@ -27,6 +27,10 @@ export class PushDataClientUseCase {
     const existingClient = await this.clientRepo.getById(data.id);
     if (!existingClient) {
       throw new NotFoundError('Cliente', data.id);
+    }
+
+    if (existingClient.empresaId !== currentUser.empresaId) {
+      throw new AuthorizationError('No tienes permiso para modificar este cliente');
     }
 
     // merge sin borrar
@@ -60,7 +64,8 @@ export class PushDataClientUseCase {
       existingClient.authorized,
       existingClient.businessName,
       existingClient.createdAt,
-      new Date() // lastModified actualizado
+      new Date(), // lastModified actualizado
+      existingClient.empresaId
     );
 
     await this.clientRepo.update(updatedClient);

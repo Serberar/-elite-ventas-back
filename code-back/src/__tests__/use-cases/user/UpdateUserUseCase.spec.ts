@@ -1,7 +1,8 @@
 import { UpdateUserUseCase } from '@application/use-cases/user/UpdateUserUseCase';
 import { IUserRepository } from '@domain/repositories/IUserRepository';
 import { User } from '@domain/entities/User';
-import { NotFoundError, ConflictError } from '@application/shared/AppError';
+import { NotFoundError, ConflictError, AuthorizationError } from '@application/shared/AppError';
+import { CurrentUser } from '@application/shared/types/CurrentUser';
 
 jest.mock('@infrastructure/observability/logger/logger', () => ({
   info: jest.fn(),
@@ -26,11 +27,19 @@ describe('UpdateUserUseCase', () => {
     'johndoe',
     'old_hashed_password',
     'coordinador',
+    '00000000-0000-0000-0000-000000000001',
     true,
     0,
     createdAt,
     null
   );
+
+  const adminUser: CurrentUser = {
+    id: 'admin-1',
+    role: 'administrador',
+    firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -60,7 +69,7 @@ describe('UpdateUserUseCase', () => {
       const result = await useCase.execute('user-123', {
         firstName: 'Jane',
         lastName: 'Smith',
-      });
+      }, adminUser);
 
       expect(result.firstName).toBe('Jane');
       expect(result.lastName).toBe('Smith');
@@ -72,21 +81,21 @@ describe('UpdateUserUseCase', () => {
       mockRepository.findByUsername.mockResolvedValue(null);
       mockRepository.update.mockResolvedValue(undefined);
 
-      const result = await useCase.execute('user-123', { username: 'newusername' });
+      const result = await useCase.execute('user-123', { username: 'newusername' }, adminUser);
 
       expect(result.username).toBe('newusername');
       expect(mockRepository.findByUsername).toHaveBeenCalledWith('newusername');
     });
 
     it('should throw ConflictError when username is already taken', async () => {
-      const anotherUser = new User('other-user', 'Other', 'User', 'newusername', 'pw', 'comercial', true, 0, new Date(), null);
+      const anotherUser = new User('other-user', 'Other', 'User', 'newusername', 'pw', 'comercial', '00000000-0000-0000-0000-000000000001', true, 0, new Date(), null);
       mockRepository.findById.mockResolvedValue(existingUser);
       mockRepository.findByUsername.mockResolvedValue(anotherUser);
 
-      await expect(useCase.execute('user-123', { username: 'newusername' })).rejects.toThrow(
+      await expect(useCase.execute('user-123', { username: 'newusername' }, adminUser)).rejects.toThrow(
         ConflictError
       );
-      await expect(useCase.execute('user-123', { username: 'newusername' })).rejects.toThrow(
+      await expect(useCase.execute('user-123', { username: 'newusername' }, adminUser)).rejects.toThrow(
         'El nombre de usuario ya está en uso'
       );
     });
@@ -95,7 +104,7 @@ describe('UpdateUserUseCase', () => {
       mockRepository.findById.mockResolvedValue(existingUser);
       mockRepository.update.mockResolvedValue(undefined);
 
-      const result = await useCase.execute('user-123', { username: 'johndoe' });
+      const result = await useCase.execute('user-123', { username: 'johndoe' }, adminUser);
 
       expect(result.username).toBe('johndoe');
       expect(mockRepository.findByUsername).not.toHaveBeenCalled();
@@ -106,7 +115,7 @@ describe('UpdateUserUseCase', () => {
       mockRepository.findById.mockResolvedValue(existingUser);
       mockRepository.update.mockResolvedValue(undefined);
 
-      await useCase.execute('user-123', { password: 'newpassword' });
+      await useCase.execute('user-123', { password: 'newpassword' }, adminUser);
 
       expect(hash).toHaveBeenCalledWith('newpassword', 10);
     });
@@ -114,28 +123,37 @@ describe('UpdateUserUseCase', () => {
     it('should throw NotFoundError when user does not exist', async () => {
       mockRepository.findById.mockResolvedValue(null);
 
-      await expect(useCase.execute('non-existent', { firstName: 'Jane' })).rejects.toThrow(
+      await expect(useCase.execute('non-existent', { firstName: 'Jane' }, adminUser)).rejects.toThrow(
         NotFoundError
       );
     });
 
+    it('should throw AuthorizationError when updating user from another empresa', async () => {
+      mockRepository.findById.mockResolvedValue(existingUser);
+      const otherUser: CurrentUser = { id: 'x', role: 'administrador', firstName: 'X', empresaId: 'otra-empresa' };
+
+      await expect(useCase.execute('user-123', { firstName: 'Jane' }, otherUser)).rejects.toThrow(
+        AuthorizationError
+      );
+    });
+
     it('should reset failedLoginAttempts when reactivating user', async () => {
-      const lockedUser = new User('user-123', 'John', 'Doe', 'johndoe', 'pw', 'coordinador', false, 5, createdAt, null);
+      const lockedUser = new User('user-123', 'John', 'Doe', 'johndoe', 'pw', 'coordinador', '00000000-0000-0000-0000-000000000001', false, 5, createdAt, null);
       mockRepository.findById.mockResolvedValue(lockedUser);
       mockRepository.update.mockResolvedValue(undefined);
 
-      const result = await useCase.execute('user-123', { active: true });
+      const result = await useCase.execute('user-123', { active: true }, adminUser);
 
       expect(result.active).toBe(true);
       expect(result.failedLoginAttempts).toBe(0);
     });
 
     it('should preserve failedLoginAttempts when not changing active state', async () => {
-      const userWithAttempts = new User('user-123', 'John', 'Doe', 'johndoe', 'pw', 'coordinador', true, 3, createdAt, null);
+      const userWithAttempts = new User('user-123', 'John', 'Doe', 'johndoe', 'pw', 'coordinador', '00000000-0000-0000-0000-000000000001', true, 3, createdAt, null);
       mockRepository.findById.mockResolvedValue(userWithAttempts);
       mockRepository.update.mockResolvedValue(undefined);
 
-      const result = await useCase.execute('user-123', { firstName: 'Jane' });
+      const result = await useCase.execute('user-123', { firstName: 'Jane' }, adminUser);
 
       expect(result.failedLoginAttempts).toBe(3);
     });
@@ -144,7 +162,7 @@ describe('UpdateUserUseCase', () => {
       mockRepository.findById.mockResolvedValue(existingUser);
       mockRepository.update.mockResolvedValue(undefined);
 
-      const result = await useCase.execute('user-123', {});
+      const result = await useCase.execute('user-123', {}, adminUser);
 
       expect(typeof result.createdAt).toBe('string');
       expect(result.createdAt).toBe(createdAt.toISOString());
@@ -154,16 +172,16 @@ describe('UpdateUserUseCase', () => {
       mockRepository.findById.mockResolvedValue(existingUser);
       mockRepository.update.mockRejectedValue(new Error('DB error'));
 
-      await expect(useCase.execute('user-123', {})).rejects.toThrow('DB error');
+      await expect(useCase.execute('user-123', {}, adminUser)).rejects.toThrow('DB error');
     });
 
     it('should update role', async () => {
       mockRepository.findById.mockResolvedValue(existingUser);
       mockRepository.update.mockResolvedValue(undefined);
 
-      const result = await useCase.execute('user-123', { role: 'verificador' });
+      const result = await useCase.execute('user-123', { role: 'coordinador' }, adminUser);
 
-      expect(result.role).toBe('verificador');
+      expect(result.role).toBe('coordinador');
     });
   });
 });

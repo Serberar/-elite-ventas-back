@@ -20,6 +20,7 @@ describe('DeleteUserUseCase', () => {
     'johndoe',
     'hashed_password',
     'administrador',
+    '00000000-0000-0000-0000-000000000001',
     true,
     0,
     new Date('2024-01-01'),

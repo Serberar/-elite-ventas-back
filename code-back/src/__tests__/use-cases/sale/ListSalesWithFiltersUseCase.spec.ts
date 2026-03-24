@@ -12,6 +12,7 @@ describe('ListSalesWithFiltersUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockSales: Sale[] = [
@@ -51,7 +52,7 @@ describe('ListSalesWithFiltersUseCase', () => {
       const result = await useCase.execute({}, mockUser);
 
       expect(result).toEqual(mockSales);
-      expect(mockRepository.list).toHaveBeenCalledWith({});
+      expect(mockRepository.list).toHaveBeenCalledWith({ empresaId: '00000000-0000-0000-0000-000000000001' });
     });
 
     it('should pass filters directly to repository', async () => {
@@ -59,7 +60,7 @@ describe('ListSalesWithFiltersUseCase', () => {
 
       await useCase.execute({ statusId: 'status-1' }, mockUser);
 
-      expect(mockRepository.list).toHaveBeenCalledWith({ statusId: 'status-1' });
+      expect(mockRepository.list).toHaveBeenCalledWith({ statusId: 'status-1', empresaId: '00000000-0000-0000-0000-000000000001' });
     });
 
     it('should return empty array when no sales match', async () => {
@@ -71,7 +72,7 @@ describe('ListSalesWithFiltersUseCase', () => {
     });
 
     it('should work with coordinador role', async () => {
-      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C' };
+      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C', empresaId: '00000000-0000-0000-0000-000000000001' };
       mockRepository.list.mockResolvedValue(mockSales);
 
       const result = await useCase.execute({}, coordinadorUser);
@@ -79,8 +80,8 @@ describe('ListSalesWithFiltersUseCase', () => {
       expect(result).toEqual(mockSales);
     });
 
-    it('should work with verificador role', async () => {
-      const verificadorUser: CurrentUser = { id: 'u3', role: 'verificador', firstName: 'V' };
+    it('should work with coordinador role', async () => {
+      const verificadorUser: CurrentUser = { id: 'u3', role: 'coordinador', firstName: 'V', empresaId: '00000000-0000-0000-0000-000000000001' };
       mockRepository.list.mockResolvedValue(mockSales);
 
       const result = await useCase.execute({}, verificadorUser);
@@ -88,11 +89,13 @@ describe('ListSalesWithFiltersUseCase', () => {
       expect(result).toEqual(mockSales);
     });
 
-    it('should throw AuthorizationError for comercial role', async () => {
-      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com' };
+    it('should work with comercial role', async () => {
+      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
+      mockRepository.list.mockResolvedValue(mockSales);
 
-      await expect(useCase.execute({}, comercialUser)).rejects.toThrow(AuthorizationError);
-      expect(mockRepository.list).not.toHaveBeenCalled();
+      const result = await useCase.execute({}, comercialUser);
+      expect(result).toEqual(mockSales);
+      expect(mockRepository.list).toHaveBeenCalled();
     });
 
     it('should handle repository errors', async () => {

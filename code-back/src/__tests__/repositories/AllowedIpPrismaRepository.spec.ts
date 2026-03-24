@@ -54,9 +54,9 @@ describe('AllowedIpPrismaRepository', () => {
     it('should return list of AllowedIp entities', async () => {
       (prisma.allowedIp.findMany as jest.Mock).mockResolvedValue([mockIpRow]);
 
-      const result = await repository.list();
+      const result = await repository.list('00000000-0000-0000-0000-000000000001');
 
-      expect(prisma.allowedIp.findMany).toHaveBeenCalledWith({ orderBy: { createdAt: 'desc' } });
+      expect(prisma.allowedIp.findMany).toHaveBeenCalledWith({ where: { empresaId: '00000000-0000-0000-0000-000000000001' }, orderBy: { createdAt: 'desc' } });
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(AllowedIp);
       expect(result[0].ip).toBe('192.168.1.1');
@@ -65,7 +65,7 @@ describe('AllowedIpPrismaRepository', () => {
     it('should return empty array when no IPs exist', async () => {
       (prisma.allowedIp.findMany as jest.Mock).mockResolvedValue([]);
 
-      const result = await repository.list();
+      const result = await repository.list('00000000-0000-0000-0000-000000000001');
 
       expect(result).toEqual([]);
     });
@@ -73,15 +73,15 @@ describe('AllowedIpPrismaRepository', () => {
     it('should use cache via getOrSet', async () => {
       (prisma.allowedIp.findMany as jest.Mock).mockResolvedValue([mockIpRow]);
 
-      await repository.list();
+      await repository.list('00000000-0000-0000-0000-000000000001');
 
-      expect(cacheService.getOrSet).toHaveBeenCalledWith('allowed_ips:all', expect.any(Function), 30);
+      expect(cacheService.getOrSet).toHaveBeenCalledWith('allowed_ips:all:00000000-0000-0000-0000-000000000001', expect.any(Function), 30);
     });
 
     it('should propagate prisma errors', async () => {
       (prisma.allowedIp.findMany as jest.Mock).mockRejectedValue(new Error('DB error'));
 
-      await expect(repository.list()).rejects.toThrow('DB error');
+      await expect(repository.list('00000000-0000-0000-0000-000000000001')).rejects.toThrow('DB error');
     });
   });
 
@@ -115,10 +115,10 @@ describe('AllowedIpPrismaRepository', () => {
     it('should create and return an AllowedIp entity', async () => {
       (prisma.allowedIp.create as jest.Mock).mockResolvedValue(mockIpRow);
 
-      const result = await repository.create({ ip: '192.168.1.1', description: 'Oficina' });
+      const result = await repository.create({ ip: '192.168.1.1', description: 'Oficina', empresaId: '00000000-0000-0000-0000-000000000001' });
 
       expect(prisma.allowedIp.create).toHaveBeenCalledWith({
-        data: { ip: '192.168.1.1', description: 'Oficina' },
+        data: { ip: '192.168.1.1', description: 'Oficina', empresaId: '00000000-0000-0000-0000-000000000001' },
       });
       expect(result).toBeInstanceOf(AllowedIp);
       expect(result.ip).toBe('192.168.1.1');
@@ -127,7 +127,7 @@ describe('AllowedIpPrismaRepository', () => {
     it('should trim whitespace from IP before saving', async () => {
       (prisma.allowedIp.create as jest.Mock).mockResolvedValue({ ...mockIpRow, ip: '10.0.0.5' });
 
-      await repository.create({ ip: '  10.0.0.5  ' });
+      await repository.create({ ip: '  10.0.0.5  ', empresaId: '00000000-0000-0000-0000-000000000001' });
 
       expect(prisma.allowedIp.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ ip: '10.0.0.5' }) })
@@ -137,7 +137,7 @@ describe('AllowedIpPrismaRepository', () => {
     it('should set description to null when not provided', async () => {
       (prisma.allowedIp.create as jest.Mock).mockResolvedValue({ ...mockIpRow, description: null });
 
-      await repository.create({ ip: '192.168.1.1' });
+      await repository.create({ ip: '192.168.1.1', empresaId: '00000000-0000-0000-0000-000000000001' });
 
       expect(prisma.allowedIp.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ description: null }) })
@@ -147,7 +147,7 @@ describe('AllowedIpPrismaRepository', () => {
     it('should invalidate cache after creating', async () => {
       (prisma.allowedIp.create as jest.Mock).mockResolvedValue(mockIpRow);
 
-      await repository.create({ ip: '192.168.1.1' });
+      await repository.create({ ip: '192.168.1.1', empresaId: '00000000-0000-0000-0000-000000000001' });
 
       expect(cacheService.invalidatePattern).toHaveBeenCalledWith('allowed_ips');
     });
@@ -155,23 +155,23 @@ describe('AllowedIpPrismaRepository', () => {
     it('should propagate prisma errors', async () => {
       (prisma.allowedIp.create as jest.Mock).mockRejectedValue(new Error('Unique constraint failed'));
 
-      await expect(repository.create({ ip: '192.168.1.1' })).rejects.toThrow('Unique constraint failed');
+      await expect(repository.create({ ip: '192.168.1.1', empresaId: '00000000-0000-0000-0000-000000000001' })).rejects.toThrow('Unique constraint failed');
     });
   });
 
   describe('delete', () => {
-    it('should delete the IP by id', async () => {
+    it('should delete the IP by id and empresaId', async () => {
       (prisma.allowedIp.delete as jest.Mock).mockResolvedValue(undefined);
 
-      await repository.delete('ip-1');
+      await repository.delete('ip-1', 'empresa-1');
 
-      expect(prisma.allowedIp.delete).toHaveBeenCalledWith({ where: { id: 'ip-1' } });
+      expect(prisma.allowedIp.delete).toHaveBeenCalledWith({ where: { id: 'ip-1', empresaId: 'empresa-1' } });
     });
 
     it('should invalidate cache after deleting', async () => {
       (prisma.allowedIp.delete as jest.Mock).mockResolvedValue(undefined);
 
-      await repository.delete('ip-1');
+      await repository.delete('ip-1', 'empresa-1');
 
       expect(cacheService.invalidatePattern).toHaveBeenCalledWith('allowed_ips');
     });
@@ -179,7 +179,7 @@ describe('AllowedIpPrismaRepository', () => {
     it('should propagate prisma errors', async () => {
       (prisma.allowedIp.delete as jest.Mock).mockRejectedValue(new Error('Record not found'));
 
-      await expect(repository.delete('non-existent')).rejects.toThrow('Record not found');
+      await expect(repository.delete('non-existent', 'empresa-1')).rejects.toThrow('Record not found');
     });
   });
 });

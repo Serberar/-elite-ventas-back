@@ -15,10 +15,10 @@ import { prisma } from '@infrastructure/prisma/prismaClient';
 describe('GetSalesStatsUseCase', () => {
   let useCase: GetSalesStatsUseCase;
 
-  const adminUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin' };
-  const coordinadorUser: CurrentUser = { id: 'user-2', role: 'coordinador', firstName: 'Coord' };
-  const verificadorUser: CurrentUser = { id: 'user-3', role: 'verificador', firstName: 'Verif' };
-  const comercialUser: CurrentUser = { id: 'user-4', role: 'comercial', firstName: 'Com' };
+  const adminUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin', empresaId: '00000000-0000-0000-0000-000000000001' };
+  const coordinadorUser: CurrentUser = { id: 'user-2', role: 'coordinador', firstName: 'Coord', empresaId: '00000000-0000-0000-0000-000000000001' };
+  const verificadorUser: CurrentUser = { id: 'user-3', role: 'coordinador', firstName: 'Verif', empresaId: '00000000-0000-0000-0000-000000000001' };
+  const comercialUser: CurrentUser = { id: 'user-4', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
 
   const mockAggregate = (quantity: number | null) =>
     ({ _sum: { quantity } });
@@ -45,18 +45,18 @@ describe('GetSalesStatsUseCase', () => {
       expect(result).toEqual({ daily: 5, weekly: 20, monthly: 50 });
     });
 
-    it('should execute for verificador', async () => {
+    it('should execute for coordinador', async () => {
       const result = await useCase.execute(verificadorUser);
       expect(result).toEqual({ daily: 5, weekly: 20, monthly: 50 });
     });
 
-    it('should throw AuthorizationError for comercial', async () => {
-      await expect(useCase.execute(comercialUser)).rejects.toThrow(AuthorizationError);
-      expect(prisma.saleItem.aggregate).not.toHaveBeenCalled();
+    it('should execute for comercial', async () => {
+      const result = await useCase.execute(comercialUser);
+      expect(result).toEqual({ daily: 5, weekly: 20, monthly: 50 });
     });
 
     it('should throw AuthorizationError for unknown role', async () => {
-      const unknownUser: CurrentUser = { id: 'u5', role: 'unknown' as never, firstName: 'X' };
+      const unknownUser: CurrentUser = { id: 'u5', role: 'unknown' as never, firstName: 'X', empresaId: '00000000-0000-0000-0000-000000000001' };
       await expect(useCase.execute(unknownUser)).rejects.toThrow(AuthorizationError);
     });
   });

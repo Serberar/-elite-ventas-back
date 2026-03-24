@@ -1,11 +1,11 @@
 import { AllowedIp } from '@domain/entities/AllowedIp';
 
 export interface IAllowedIpRepository {
-  list(): Promise<AllowedIp[]>;
+  list(empresaId: string): Promise<AllowedIp[]>;
 
-  listIpStrings(): Promise<string[]>;
+  listIpStrings(empresaId?: string): Promise<string[]>;
 
-  create(data: { ip: string; description?: string | null }): Promise<AllowedIp>;
+  create(data: { ip: string; description?: string | null; empresaId: string }): Promise<AllowedIp>;
 
-  delete(id: string): Promise<void>;
+  delete(id: string, empresaId: string): Promise<void>;
 }

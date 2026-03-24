@@ -8,6 +8,20 @@ import { SignatureRequest } from '@domain/entities/SignatureRequest';
 import { CurrentUser } from '@application/shared/types/CurrentUser';
 import { AuthorizationError, NotFoundError, ValidationError } from '@application/shared/AppError';
 
+jest.mock('@infrastructure/express/controllers/ContractTemplateController', () => ({
+  ContractTemplateController: {
+    loadForPdf: jest.fn().mockResolvedValue({
+      docxPath: null,
+      logoPath: null,
+      companyName: 'Test Company',
+      address: 'Test Address',
+      phone: '123456789',
+      email: 'test@test.com',
+      nif: 'B12345678',
+    }),
+  },
+}));
+
 describe('GenerateAndSendContractUseCase', () => {
   let useCase: GenerateAndSendContractUseCase;
   let mockSaleRepo: jest.Mocked<ISaleRepository>;
@@ -16,8 +30,8 @@ describe('GenerateAndSendContractUseCase', () => {
   let mockPdfGenerator: jest.Mocked<PdfGenerator>;
   let mockSettingRepo: jest.Mocked<SystemSettingPrismaRepository>;
 
-  const adminUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin' };
-  const comercialUser: CurrentUser = { id: 'user-2', role: 'comercial', firstName: 'Com' };
+  const adminUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin', empresaId: '00000000-0000-0000-0000-000000000001' };
+  const comercialUser: CurrentUser = { id: 'user-2', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
 
   const mockPdfBuffer = Buffer.from('pdf-content');
 
@@ -27,6 +41,7 @@ describe('GenerateAndSendContractUseCase', () => {
       clientId: 'client-1',
       statusId: 'status-1',
       totalAmount: 500,
+      empresaId: '00000000-0000-0000-0000-000000000001',
       clientSnapshot: {
         firstName: 'John',
         lastName: 'Doe',
@@ -53,10 +68,19 @@ describe('GenerateAndSendContractUseCase', () => {
   };
 
   const mockSignatureRequest = new SignatureRequest(
-    'sig-1', 'sale-123', 'pending', 'john@example.com',
+    'sig-1', 'sale-123', 'contract',
+      'pending', 'john@example.com',
     'doc-provider-abc', null, null,
     new Date('2024-01-15'), null, null,
     new Date('2024-01-15'), new Date('2024-01-15')
+  );
+
+  const mockSignedConsent = new SignatureRequest(
+    'consent-1', 'sale-123', 'consent',
+    'signed', 'john@example.com',
+    'consent-doc-id', null, null,
+    new Date('2024-01-10'), new Date('2024-01-11'), null,
+    new Date('2024-01-10'), new Date('2024-01-11')
   );
 
   beforeEach(() => {
@@ -85,6 +109,7 @@ describe('GenerateAndSendContractUseCase', () => {
       create: jest.fn(),
       findById: jest.fn(),
       findBySaleId: jest.fn(),
+      findBySaleIdAndType: jest.fn(),
       findByProviderDocumentId: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -117,6 +142,11 @@ describe('GenerateAndSendContractUseCase', () => {
     // Defaults
     mockSaleRepo.findWithRelations.mockResolvedValue(baseSaleWithRelations as never);
     mockSignatureRepo.findBySaleId.mockResolvedValue(null);
+    // By default: consent is signed, no existing contract
+    mockSignatureRepo.findBySaleIdAndType.mockImplementation(async (_saleId, type) => {
+      if (type === 'consent') return mockSignedConsent;
+      return null;
+    });
     mockPdfGenerator.generate.mockResolvedValue(mockPdfBuffer);
     mockSignatureProvider.sendDocument.mockResolvedValue({ documentId: 'doc-provider-abc' });
     mockSignatureRepo.create.mockResolvedValue(mockSignatureRequest);
@@ -135,7 +165,7 @@ describe('GenerateAndSendContractUseCase', () => {
     });
 
     it('should throw AuthorizationError for unknown role', async () => {
-      const unknownUser: CurrentUser = { id: 'u', role: 'unknown' as never, firstName: 'X' };
+      const unknownUser: CurrentUser = { id: 'u', role: 'unknown' as never, firstName: 'X', empresaId: '00000000-0000-0000-0000-000000000001' };
       await expect(
         useCase.execute({ saleId: 'sale-123', signerEmail: 'x@x.com' }, unknownUser)
       ).rejects.toThrow(AuthorizationError);
@@ -183,19 +213,24 @@ describe('GenerateAndSendContractUseCase', () => {
   describe('happy path — actualiza existente no pendiente (rechazado/cancelado)', () => {
     it('should update existing non-pending signature request', async () => {
       const rejectedRequest = new SignatureRequest(
-        'sig-old', 'sale-123', 'rejected', 'old@example.com',
+        'sig-old', 'sale-123', 'contract',
+      'rejected', 'old@example.com',
         'old-doc-id', null, 'Rechazado',
         new Date(), null, new Date(),
         new Date(), new Date()
       );
       const updatedRequest = new SignatureRequest(
-        'sig-old', 'sale-123', 'pending', 'john@example.com',
+        'sig-old', 'sale-123', 'contract',
+      'pending', 'john@example.com',
         'doc-provider-abc', null, null,
         new Date(), null, null,
         new Date(), new Date()
       );
 
-      mockSignatureRepo.findBySaleId.mockResolvedValue(rejectedRequest);
+      mockSignatureRepo.findBySaleIdAndType.mockImplementation(async (_saleId, type) => {
+        if (type === 'consent') return mockSignedConsent;
+        return rejectedRequest; // existing rejected contract
+      });
       mockSignatureRepo.update.mockResolvedValue(updatedRequest);
 
       const result = await useCase.execute(
@@ -222,7 +257,23 @@ describe('GenerateAndSendContractUseCase', () => {
     });
 
     it('should throw ValidationError when pending signature request already exists', async () => {
-      mockSignatureRepo.findBySaleId.mockResolvedValue(mockSignatureRequest); // status: 'pending'
+      mockSignatureRepo.findBySaleIdAndType.mockImplementation(async (_saleId, type) => {
+        if (type === 'consent') return mockSignedConsent;
+        return mockSignatureRequest; // existing contract with status: 'pending'
+      });
+
+      await expect(
+        useCase.execute({ saleId: 'sale-123', signerEmail: 'john@example.com' }, adminUser)
+      ).rejects.toThrow(ValidationError);
+
+      expect(mockPdfGenerator.generate).not.toHaveBeenCalled();
+    });
+
+    it('should throw ValidationError when consent is not signed', async () => {
+      mockSignatureRepo.findBySaleIdAndType.mockImplementation(async (_saleId, type) => {
+        if (type === 'consent') return null; // no consent
+        return null;
+      });
 
       await expect(
         useCase.execute({ saleId: 'sale-123', signerEmail: 'john@example.com' }, adminUser)

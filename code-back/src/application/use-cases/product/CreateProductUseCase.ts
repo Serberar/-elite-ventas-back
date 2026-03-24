@@ -38,7 +38,8 @@ export class CreateProductUseCase {
       data.periodo ?? null,
       data.precioBase ?? null,
       data.precioConsumo ?? null,
-      data.unidadConsumo ?? null
+      data.unidadConsumo ?? null,
+      currentUser.empresaId
     );
 
     // Persistir

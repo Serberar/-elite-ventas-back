@@ -16,9 +16,9 @@ describe('GetAllUsersUseCase', () => {
   const lastLoginAt = new Date('2024-06-01');
 
   const mockUsers: User[] = [
-    new User('user-1', 'John', 'Doe', 'johndoe', 'hashed_pw', 'administrador', true, 0, createdAt, lastLoginAt),
-    new User('user-2', 'Jane', 'Smith', 'janesmith', 'hashed_pw2', 'coordinador', true, 0, createdAt, null),
-    new User('user-3', 'Bob', 'Brown', 'bobbrown', 'hashed_pw3', 'verificador', false, 3, createdAt, null),
+    new User('user-1', 'John', 'Doe', 'johndoe', 'hashed_pw', 'administrador', '00000000-0000-0000-0000-000000000001', true, 0, createdAt, lastLoginAt),
+    new User('user-2', 'Jane', 'Smith', 'janesmith', 'hashed_pw2', 'coordinador', '00000000-0000-0000-0000-000000000001', true, 0, createdAt, null),
+    new User('user-3', 'Bob', 'Brown', 'bobbrown', 'hashed_pw3', 'coordinador', '00000000-0000-0000-0000-000000000001', false, 3, createdAt, null),
   ];
 
   beforeEach(() => {
@@ -45,7 +45,7 @@ describe('GetAllUsersUseCase', () => {
     it('should return all users as DTOs', async () => {
       mockRepository.findAll.mockResolvedValue(mockUsers);
 
-      const result = await useCase.execute();
+      const result = await useCase.execute('00000000-0000-0000-0000-000000000001', 'coordinador');
 
       expect(result).toHaveLength(3);
       expect(mockRepository.findAll).toHaveBeenCalled();
@@ -54,7 +54,7 @@ describe('GetAllUsersUseCase', () => {
     it('should map users to DTOs correctly', async () => {
       mockRepository.findAll.mockResolvedValue([mockUsers[0]]);
 
-      const result = await useCase.execute();
+      const result = await useCase.execute('00000000-0000-0000-0000-000000000001', 'coordinador');
 
       expect(result[0]).toEqual({
         id: 'user-1',
@@ -64,6 +64,7 @@ describe('GetAllUsersUseCase', () => {
         role: 'administrador',
         active: true,
         failedLoginAttempts: 0,
+        empresaId: '00000000-0000-0000-0000-000000000001',
         createdAt: createdAt.toISOString(),
         lastLoginAt: lastLoginAt.toISOString(),
       });
@@ -72,7 +73,7 @@ describe('GetAllUsersUseCase', () => {
     it('should set lastLoginAt to null when user has never logged in', async () => {
       mockRepository.findAll.mockResolvedValue([mockUsers[1]]);
 
-      const result = await useCase.execute();
+      const result = await useCase.execute('00000000-0000-0000-0000-000000000001', 'coordinador');
 
       expect(result[0].lastLoginAt).toBeNull();
     });
@@ -80,7 +81,7 @@ describe('GetAllUsersUseCase', () => {
     it('should return empty array when no users exist', async () => {
       mockRepository.findAll.mockResolvedValue([]);
 
-      const result = await useCase.execute();
+      const result = await useCase.execute('00000000-0000-0000-0000-000000000001', 'coordinador');
 
       expect(result).toEqual([]);
     });
@@ -88,7 +89,7 @@ describe('GetAllUsersUseCase', () => {
     it('should exclude password from result', async () => {
       mockRepository.findAll.mockResolvedValue(mockUsers);
 
-      const result = await useCase.execute();
+      const result = await useCase.execute('00000000-0000-0000-0000-000000000001', 'coordinador');
 
       result.forEach((user) => {
         expect(user).not.toHaveProperty('password');
@@ -98,7 +99,7 @@ describe('GetAllUsersUseCase', () => {
     it('should include inactive users with their failedLoginAttempts', async () => {
       mockRepository.findAll.mockResolvedValue([mockUsers[2]]);
 
-      const result = await useCase.execute();
+      const result = await useCase.execute('00000000-0000-0000-0000-000000000001', 'coordinador');
 
       expect(result[0].active).toBe(false);
       expect(result[0].failedLoginAttempts).toBe(3);
@@ -107,13 +108,13 @@ describe('GetAllUsersUseCase', () => {
     it('should handle repository errors', async () => {
       mockRepository.findAll.mockRejectedValue(new Error('DB error'));
 
-      await expect(useCase.execute()).rejects.toThrow('DB error');
+      await expect(useCase.execute('00000000-0000-0000-0000-000000000001', 'coordinador')).rejects.toThrow('DB error');
     });
 
     it('should return ISO string for createdAt', async () => {
       mockRepository.findAll.mockResolvedValue([mockUsers[0]]);
 
-      const result = await useCase.execute();
+      const result = await useCase.execute('00000000-0000-0000-0000-000000000001', 'coordinador');
 
       expect(typeof result[0].createdAt).toBe('string');
       expect(result[0].createdAt).toBe(createdAt.toISOString());

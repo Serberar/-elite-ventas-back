@@ -15,7 +15,7 @@ export class GetClientUseCase {
       'descargar clientes por teléfono o DNI'
     );
 
-    const clients = await this.clientRepository.getByPhoneOrDNI(value);
+    const clients = await this.clientRepository.getByPhoneOrDNI(value, currentUser.empresaId);
     if (!clients || clients.length === 0) {
       return [];
     }

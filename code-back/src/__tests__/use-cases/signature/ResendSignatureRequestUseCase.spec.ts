@@ -3,10 +3,15 @@ import { ISaleRepository } from '@domain/repositories/ISaleRepository';
 import { ISignatureRequestRepository } from '@domain/repositories/ISignatureRequestRepository';
 import { ISignatureProvider } from '@domain/services/ISignatureProvider';
 import { PdfGenerator } from '@infrastructure/signature/PdfGenerator';
-import { SystemSettingPrismaRepository } from '@infrastructure/prisma/SystemSettingPrismaRepository';
 import { SignatureRequest } from '@domain/entities/SignatureRequest';
 import { CurrentUser } from '@application/shared/types/CurrentUser';
 import { AuthorizationError, NotFoundError, ValidationError } from '@application/shared/AppError';
+
+jest.mock('@infrastructure/express/controllers/ContractTemplateController', () => ({
+  ContractTemplateController: {
+    loadForPdf: jest.fn().mockResolvedValue({ docxPath: null, seccionesContrato: [], paginasExtra: [] }),
+  },
+}));
 
 describe('ResendSignatureRequestUseCase', () => {
   let useCase: ResendSignatureRequestUseCase;
@@ -14,12 +19,11 @@ describe('ResendSignatureRequestUseCase', () => {
   let mockSignatureRepo: jest.Mocked<ISignatureRequestRepository>;
   let mockSignatureProvider: jest.Mocked<ISignatureProvider>;
   let mockPdfGenerator: jest.Mocked<PdfGenerator>;
-  let mockSettingRepo: jest.Mocked<SystemSettingPrismaRepository>;
 
-  const adminUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin' };
-  const coordinadorUser: CurrentUser = { id: 'user-2', role: 'coordinador', firstName: 'Coord' };
-  const verificadorUser: CurrentUser = { id: 'user-3', role: 'verificador', firstName: 'Verif' };
-  const comercialUser: CurrentUser = { id: 'user-4', role: 'comercial', firstName: 'Com' };
+  const adminUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin', empresaId: '00000000-0000-0000-0000-000000000001' };
+  const coordinadorUser: CurrentUser = { id: 'user-2', role: 'coordinador', firstName: 'Coord', empresaId: '00000000-0000-0000-0000-000000000001' };
+  const verificadorUser: CurrentUser = { id: 'user-3', role: 'coordinador', firstName: 'Verif', empresaId: '00000000-0000-0000-0000-000000000001' };
+  const comercialUser: CurrentUser = { id: 'user-4', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
 
   const mockPdfBuffer = Buffer.from('pdf-content');
 
@@ -28,6 +32,7 @@ describe('ResendSignatureRequestUseCase', () => {
       id: 'sale-123',
       clientId: 'client-1',
       statusId: 'status-1',
+      empresaId: '00000000-0000-0000-0000-000000000001',
       totalAmount: 500,
       clientSnapshot: {
         firstName: 'John',
@@ -55,21 +60,24 @@ describe('ResendSignatureRequestUseCase', () => {
   };
 
   const pendingSignature = new SignatureRequest(
-    'sig-1', 'sale-123', 'pending', 'john@example.com',
+    'sig-1', 'sale-123', 'contract',
+      'pending', 'john@example.com',
     'doc-provider-old', null, null,
     new Date('2024-01-15'), null, null,
     new Date('2024-01-15'), new Date('2024-01-15')
   );
 
   const rejectedSignature = new SignatureRequest(
-    'sig-1', 'sale-123', 'rejected', 'old@example.com',
+    'sig-1', 'sale-123', 'contract',
+      'rejected', 'old@example.com',
     'doc-provider-old', null, 'Rechazado',
     new Date('2024-01-15'), null, new Date('2024-01-15'),
     new Date('2024-01-15'), new Date('2024-01-15')
   );
 
   const updatedSignature = new SignatureRequest(
-    'sig-1', 'sale-123', 'pending', 'john@example.com',
+    'sig-1', 'sale-123', 'contract',
+      'pending', 'john@example.com',
     'doc-provider-new', null, null,
     new Date('2024-01-15'), null, null,
     new Date('2024-01-15'), new Date()
@@ -101,6 +109,7 @@ describe('ResendSignatureRequestUseCase', () => {
       create: jest.fn(),
       findById: jest.fn(),
       findBySaleId: jest.fn(),
+      findBySaleIdAndType: jest.fn(),
       findByProviderDocumentId: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -116,23 +125,16 @@ describe('ResendSignatureRequestUseCase', () => {
       generate: jest.fn(),
     } as unknown as jest.Mocked<PdfGenerator>;
 
-    mockSettingRepo = {
-      get: jest.fn().mockResolvedValue(null),
-      set: jest.fn().mockResolvedValue(undefined),
-      getBool: jest.fn().mockResolvedValue(false),
-    } as unknown as jest.Mocked<SystemSettingPrismaRepository>;
-
     useCase = new ResendSignatureRequestUseCase(
       mockSaleRepo,
       mockSignatureRepo,
       mockSignatureProvider,
       mockPdfGenerator,
-      mockSettingRepo
     );
 
     // Defaults
     mockSaleRepo.findWithRelations.mockResolvedValue(baseSaleWithRelations as never);
-    mockSignatureRepo.findBySaleId.mockResolvedValue(pendingSignature);
+    mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(pendingSignature);
     mockPdfGenerator.generate.mockResolvedValue(mockPdfBuffer);
     mockSignatureProvider.cancelDocument.mockResolvedValue(undefined as never);
     mockSignatureProvider.sendDocument.mockResolvedValue({ documentId: 'doc-provider-new' });
@@ -151,7 +153,7 @@ describe('ResendSignatureRequestUseCase', () => {
       expect(result).toBeInstanceOf(SignatureRequest);
     });
 
-    it('should execute for verificador', async () => {
+    it('should execute for coordinador', async () => {
       const result = await useCase.execute({ saleId: 'sale-123' }, verificadorUser);
       expect(result).toBeInstanceOf(SignatureRequest);
     });
@@ -162,7 +164,7 @@ describe('ResendSignatureRequestUseCase', () => {
     });
 
     it('should throw AuthorizationError for unknown role', async () => {
-      const unknownUser: CurrentUser = { id: 'u', role: 'unknown' as never, firstName: 'X' };
+      const unknownUser: CurrentUser = { id: 'u', role: 'unknown' as never, firstName: 'X', empresaId: '00000000-0000-0000-0000-000000000001' };
       await expect(
         useCase.execute({ saleId: 'sale-123' }, unknownUser)
       ).rejects.toThrow(AuthorizationError);
@@ -179,7 +181,7 @@ describe('ResendSignatureRequestUseCase', () => {
     });
 
     it('should throw ValidationError when no signature request exists', async () => {
-      mockSignatureRepo.findBySaleId.mockResolvedValue(null);
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(null);
 
       await expect(
         useCase.execute({ saleId: 'sale-123' }, adminUser)
@@ -190,12 +192,13 @@ describe('ResendSignatureRequestUseCase', () => {
 
     it('should throw ValidationError when contract is already signed', async () => {
       const signedSignature = new SignatureRequest(
-        'sig-1', 'sale-123', 'signed', 'john@example.com',
+        'sig-1', 'sale-123', 'contract',
+      'signed', 'john@example.com',
         'doc-provider-old', 'https://signed-doc.pdf', null,
         new Date(), new Date(), null,
         new Date(), new Date()
       );
-      mockSignatureRepo.findBySaleId.mockResolvedValue(signedSignature);
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(signedSignature);
 
       await expect(
         useCase.execute({ saleId: 'sale-123' }, adminUser)
@@ -256,12 +259,13 @@ describe('ResendSignatureRequestUseCase', () => {
   describe('happy path — reenvío sin documento anterior', () => {
     it('should skip cancel when providerDocumentId is null', async () => {
       const signatureWithoutDoc = new SignatureRequest(
-        'sig-1', 'sale-123', 'rejected', 'john@example.com',
+        'sig-1', 'sale-123', 'contract',
+      'rejected', 'john@example.com',
         null, null, 'Error al enviar',
         new Date(), null, null,
         new Date(), new Date()
       );
-      mockSignatureRepo.findBySaleId.mockResolvedValue(signatureWithoutDoc);
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(signatureWithoutDoc);
 
       await useCase.execute({ saleId: 'sale-123' }, adminUser);
 
@@ -273,7 +277,7 @@ describe('ResendSignatureRequestUseCase', () => {
 
   describe('email del firmante', () => {
     it('should use existing signerEmail when dto.signerEmail is not provided', async () => {
-      mockSignatureRepo.findBySaleId.mockResolvedValue(rejectedSignature); // email: old@example.com
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(rejectedSignature); // email: old@example.com
 
       await useCase.execute({ saleId: 'sale-123' }, adminUser);
 
@@ -285,7 +289,7 @@ describe('ResendSignatureRequestUseCase', () => {
     });
 
     it('should use dto.signerEmail when provided, overriding existing', async () => {
-      mockSignatureRepo.findBySaleId.mockResolvedValue(rejectedSignature); // email: old@example.com
+      mockSignatureRepo.findBySaleIdAndType.mockResolvedValue(rejectedSignature); // email: old@example.com
 
       await useCase.execute({ saleId: 'sale-123', signerEmail: 'nuevo@example.com' }, adminUser);
 

@@ -13,6 +13,7 @@ export class SignatureRequestPrismaRepository implements ISignatureRequestReposi
       prisma.signatureRequest.create({
         data: {
           saleId: data.saleId,
+          documentType: data.documentType ?? 'contract',
           status: data.status,
           signerEmail: data.signerEmail,
           providerDocumentId: data.providerDocumentId ?? null,
@@ -31,8 +32,14 @@ export class SignatureRequestPrismaRepository implements ISignatureRequestReposi
   }
 
   async findBySaleId(saleId: string): Promise<SignatureRequest | null> {
+    return this.findBySaleIdAndType(saleId, 'contract');
+  }
+
+  async findBySaleIdAndType(saleId: string, documentType: 'contract' | 'consent'): Promise<SignatureRequest | null> {
     const row = await dbCircuitBreaker.execute(() =>
-      prisma.signatureRequest.findUnique({ where: { saleId } })
+      prisma.signatureRequest.findUnique({
+        where: { saleId_documentType: { saleId, documentType } },
+      })
     );
     return row ? SignatureRequest.fromPrisma(row) : null;
   }

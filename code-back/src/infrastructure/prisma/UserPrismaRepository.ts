@@ -59,12 +59,14 @@ export class UserPrismaRepository implements IUserRepository {
     return userData ? User.fromPrisma(userData) : null;
   }
 
-  async findAll(): Promise<User[]> {
+  async findAll(empresaId?: string): Promise<User[]> {
+    const cacheKey = empresaId ? `${CACHE_KEYS.USERS}:${empresaId}` : `${CACHE_KEYS.USERS}:all`;
     return cacheService.getOrSet(
-      CACHE_KEYS.USERS,
+      cacheKey,
       async () => {
         const usersData = await dbCircuitBreaker.execute(() =>
           prisma.user.findMany({
+            where: empresaId ? { empresaId } : undefined,
             orderBy: { firstName: 'asc' },
           })
         );

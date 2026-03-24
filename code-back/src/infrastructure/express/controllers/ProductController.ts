@@ -26,7 +26,7 @@ export class ProductController {
         req.query.limit as string | undefined
       );
 
-      const result = await serviceContainer.productRepository.findAllPaginated(pagination);
+      const result = await serviceContainer.productRepository.findAllPaginated(pagination, currentUser.empresaId);
 
       res.status(200).json({
         data: result.data.map((p) => p.toPrisma()),

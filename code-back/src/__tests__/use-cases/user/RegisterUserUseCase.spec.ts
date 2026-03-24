@@ -47,6 +47,7 @@ describe('RegisterUserUseCase', () => {
       username: 'juan123',
       password: 'password123',
       role: 'comercial' as const,
+      empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     mockRepository.findByUsername.mockResolvedValue(null);
@@ -85,6 +86,7 @@ describe('RegisterUserUseCase', () => {
       username: 'admin',
       password: 'adminpass',
       role: 'administrador' as const,
+      empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     mockRepository.findByUsername.mockResolvedValue(null);
@@ -106,6 +108,7 @@ describe('RegisterUserUseCase', () => {
       username: 'existing-user',
       password: 'password123',
       role: 'comercial' as const,
+      empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     const existingUser = new User(
@@ -114,7 +117,8 @@ describe('RegisterUserUseCase', () => {
       'User',
       'existing-user',
       'hashed-password',
-      'comercial'
+      'comercial',
+      '00000000-0000-0000-0000-000000000001'
     );
 
     mockRepository.findByUsername.mockResolvedValue(existingUser);
@@ -138,6 +142,7 @@ describe('RegisterUserUseCase', () => {
       username: 'juan123',
       password: 'password123',
       role: 'comercial' as const,
+      empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     mockRepository.findByUsername.mockResolvedValue(null);
@@ -157,6 +162,7 @@ describe('RegisterUserUseCase', () => {
       username: 'juan123',
       password: 'password123',
       role: 'comercial' as const,
+      empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     mockRepository.findByUsername.mockResolvedValue(null);
@@ -177,6 +183,7 @@ describe('RegisterUserUseCase', () => {
       username: 'juan123',
       password: 'password123',
       role: 'comercial' as const,
+      empresaId: '00000000-0000-0000-0000-000000000001',
     };
 
     mockRepository.findByUsername.mockRejectedValue(new Error('Database query error'));

@@ -24,6 +24,7 @@ describe('UpdateProductUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const existingProduct = new Product(
@@ -34,7 +35,13 @@ describe('UpdateProductUseCase', () => {
     99.99,
     true,
     new Date('2024-01-01'),
-    new Date('2024-01-01')
+    new Date('2024-01-01'),
+    'unico',
+    null,
+    null,
+    null,
+    null,
+    '00000000-0000-0000-0000-000000000001'
   );
 
   beforeEach(() => {
@@ -163,8 +170,9 @@ describe('UpdateProductUseCase', () => {
     it('should throw AuthorizationError when user lacks permission', async () => {
       const userWithoutPermission: CurrentUser = {
         id: 'user-456',
-        role: 'verificador',
-        firstName: 'Verificador',
+        role: 'comercial',
+        firstName: 'Comercial',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       const updateData = {
@@ -251,7 +259,7 @@ describe('UpdateProductUseCase', () => {
       await expect(useCase.execute(updateData, mockUser)).rejects.toThrow(dbError);
     });
 
-    it('should only work with administrador role', async () => {
+    it('should work with both administrador and coordinador roles', async () => {
       const updateData = {
         id: 'product-123',
         name: 'Updated Name',
@@ -274,16 +282,19 @@ describe('UpdateProductUseCase', () => {
       const result = await useCase.execute(updateData, mockUser);
       expect(result.name).toBe('Updated Name');
 
-      // Verify coordinador cannot update
+      // Verify coordinador can also update
       const coordinadorUser: CurrentUser = {
         id: 'user-789',
         role: 'coordinador',
         firstName: 'Coordinador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
-      await expect(useCase.execute(updateData, coordinadorUser)).rejects.toThrow(
-        AuthorizationError
-      );
+      mockRepository.findById.mockResolvedValue(existingProduct);
+      mockRepository.update.mockResolvedValue(updatedProduct);
+
+      const result2 = await useCase.execute(updateData, coordinadorUser);
+      expect(result2.name).toBe('Updated Name');
     });
 
     it('should handle partial updates with null values', async () => {

@@ -26,7 +26,7 @@ describe('RecordingController', () => {
   let setHeaderMock: jest.Mock;
   let downloadMock: jest.Mock;
 
-  const currentUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin' };
+  const currentUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin', empresaId: '00000000-0000-0000-0000-000000000001' };
 
   const mockRecording = new Recording(
     'rec-1', 'sale-123', 'llamada.mp3', 'sale-123/llamada.mp3',

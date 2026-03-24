@@ -19,7 +19,8 @@ export class Client {
     public readonly authorized?: string,
     public readonly businessName?: string,
     public readonly createdAt: Date = new Date(),
-    public readonly lastModified: Date = new Date()
+    public readonly lastModified: Date = new Date(),
+    public readonly empresaId: string = ''
   ) {}
 
   /**
@@ -52,6 +53,7 @@ export class Client {
     businessName?: string;
     createdAt: Date;
     lastModified: Date;
+    empresaId: string;
   }): Client {
     return new Client(
       data.id,
@@ -67,7 +69,8 @@ export class Client {
       data.authorized ?? undefined,
       data.businessName ?? undefined,
       data.createdAt,
-      data.lastModified
+      data.lastModified,
+      data.empresaId
     );
   }
 
@@ -86,6 +89,7 @@ export class Client {
     businessName?: string;
     createdAt: Date;
     lastModified: Date;
+    empresaId: string;
   } {
     return {
       id: this.id,
@@ -102,6 +106,7 @@ export class Client {
       businessName: this.businessName,
       createdAt: this.createdAt,
       lastModified: this.lastModified,
+      empresaId: this.empresaId,
     };
   }
 }

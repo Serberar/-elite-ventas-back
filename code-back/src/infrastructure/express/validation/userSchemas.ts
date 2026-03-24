@@ -7,9 +7,10 @@ export const registerUserSchema = z.object({
     lastName: z.string().min(2, 'El apellido debe tener al menos 2 caracteres').trim(),
     username: z.string().min(3, 'El username debe tener al menos 3 caracteres').trim(),
     password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-    role: z.enum(['administrador', 'verificador', 'coordinador', 'comercial'], {
+    role: z.enum(['administrador', 'coordinador', 'comercial'], {
       message: 'Rol inválido',
     }),
+    empresaId: z.string().uuid('empresaId debe ser un UUID válido').optional(),
   }),
 });
 

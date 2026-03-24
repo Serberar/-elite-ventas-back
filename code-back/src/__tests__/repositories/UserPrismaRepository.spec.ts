@@ -25,6 +25,7 @@ describe('UserPrismaRepository', () => {
     lastName: 'User',
     password: 'hashed123',
     role: 'administrador' as const,
+    empresaId: '00000000-0000-0000-0000-000000000001',
     active: true,
     failedLoginAttempts: 0,
     createdAt: new Date('2024-01-01'),

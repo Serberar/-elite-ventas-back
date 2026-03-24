@@ -20,6 +20,7 @@ type SaleFilters = {
   from?: Date;
   to?: Date;
   comercial?: string;
+  empresaId?: string;
 };
 
 export class SalePrismaRepository implements ISaleRepository {
@@ -29,10 +30,10 @@ export class SalePrismaRepository implements ISaleRepository {
     totalAmount?: number;
     notes?: Prisma.JsonValue | Prisma.JsonNullValueInput;
     metadata?: Prisma.JsonValue | Prisma.JsonNullValueInput;
-
     clientSnapshot: Prisma.JsonValue | Prisma.JsonNullValueInput;
     addressSnapshot: Prisma.JsonValue | Prisma.JsonNullValueInput;
     comercial?: string | null;
+    empresaId: string;
   }): Promise<Sale> {
     const row = await dbCircuitBreaker.execute(() =>
       prisma.sale.create({
@@ -45,6 +46,7 @@ export class SalePrismaRepository implements ISaleRepository {
           clientSnapshot: data.clientSnapshot ?? Prisma.JsonNull,
           addressSnapshot: data.addressSnapshot ?? Prisma.JsonNull,
           comercial: data.comercial ?? null,
+          empresaId: data.empresaId,
         },
       })
     );
@@ -93,6 +95,7 @@ export class SalePrismaRepository implements ISaleRepository {
     client?: any | null;
     status?: any | null;
     signatureRequest?: any | null;
+      consentRequest?: any | null;
   } | null> {
     const row = await dbCircuitBreaker.execute(() =>
       prisma.sale.findUnique({
@@ -106,7 +109,7 @@ export class SalePrismaRepository implements ISaleRepository {
           },
           client: true,
           status: true,
-          signatureRequest: true,
+          signatureRequests: true,
         },
       })
     );
@@ -120,7 +123,8 @@ export class SalePrismaRepository implements ISaleRepository {
       histories: row.histories.map((h) => SaleHistory.fromPrisma(h)),
       client: row.client ?? null,
       status: row.status ?? null,
-      signatureRequest: row.signatureRequest ?? null,
+      signatureRequest: row.signatureRequests.find((r: any) => r.documentType === "contract") ?? null,
+      consentRequest: row.signatureRequests.find((r: any) => r.documentType === "consent") ?? null,
     };
   }
 
@@ -131,6 +135,7 @@ export class SalePrismaRepository implements ISaleRepository {
           clientId: filters.clientId,
           statusId: filters.statusId,
           comercial: filters.comercial,
+          empresaId: filters.empresaId,
           createdAt:
             filters.from || filters.to
               ? {
@@ -158,6 +163,7 @@ export class SalePrismaRepository implements ISaleRepository {
       client?: any | null;
       status?: any | null;
       signatureRequest?: any | null;
+      consentRequest?: any | null;
     }>
   > {
     const rows = await dbCircuitBreaker.execute(() =>
@@ -166,6 +172,7 @@ export class SalePrismaRepository implements ISaleRepository {
           clientId: filters.clientId,
           statusId: filters.statusId,
           comercial: filters.comercial,
+          empresaId: filters.empresaId,
           createdAt:
             filters.from || filters.to
               ? {
@@ -180,7 +187,7 @@ export class SalePrismaRepository implements ISaleRepository {
           histories: true,
           client: true,
           status: true,
-          signatureRequest: true,
+          signatureRequests: true,
         },
         orderBy: { createdAt: 'desc' },
       })
@@ -193,7 +200,8 @@ export class SalePrismaRepository implements ISaleRepository {
       histories: row.histories.map((h) => SaleHistory.fromPrisma(h)),
       client: row.client ?? null,
       status: row.status ?? null,
-      signatureRequest: row.signatureRequest ?? null,
+      signatureRequest: row.signatureRequests.find((r: any) => r.documentType === "contract") ?? null,
+      consentRequest: row.signatureRequests.find((r: any) => r.documentType === "consent") ?? null,
     }));
   }
 
@@ -205,6 +213,7 @@ export class SalePrismaRepository implements ISaleRepository {
       clientId: filters.clientId,
       statusId: filters.statusId,
       comercial: filters.comercial,
+      empresaId: filters.empresaId,
       createdAt:
         filters.from || filters.to
           ? {
@@ -247,12 +256,14 @@ export class SalePrismaRepository implements ISaleRepository {
       client?: any | null;
       status?: any | null;
       signatureRequest?: any | null;
+      consentRequest?: any | null;
     }>
   > {
     const where = {
       clientId: filters.clientId,
       statusId: filters.statusId,
       comercial: filters.comercial,
+      empresaId: filters.empresaId,
       createdAt:
         filters.from || filters.to
           ? {
@@ -272,7 +283,7 @@ export class SalePrismaRepository implements ISaleRepository {
             histories: true,
             client: true,
             status: true,
-            signatureRequest: true,
+            signatureRequests: true,
           },
           orderBy: { createdAt: 'desc' },
           skip: calculateOffset(pagination.page, pagination.limit),
@@ -290,7 +301,8 @@ export class SalePrismaRepository implements ISaleRepository {
         histories: row.histories.map((h) => SaleHistory.fromPrisma(h)),
         client: row.client ?? null,
         status: row.status ?? null,
-        signatureRequest: row.signatureRequest ?? null,
+        signatureRequest: row.signatureRequests.find((r: any) => r.documentType === "contract") ?? null,
+      consentRequest: row.signatureRequests.find((r: any) => r.documentType === "consent") ?? null,
       })),
       meta: buildPaginationMeta(pagination.page, pagination.limit, total),
     };
@@ -404,11 +416,12 @@ export class SalePrismaRepository implements ISaleRepository {
     return SaleAssignment.fromPrisma(row);
   }
 
-  async getDistinctComerciales(): Promise<string[]> {
+  async getDistinctComerciales(empresaId: string): Promise<string[]> {
     const result = await dbCircuitBreaker.execute(() =>
       prisma.sale.findMany({
         where: {
           comercial: { not: null },
+          empresaId,
         },
         select: { comercial: true },
         distinct: ['comercial'],
@@ -433,6 +446,7 @@ export class SalePrismaRepository implements ISaleRepository {
     clientSnapshot: Prisma.JsonValue | Prisma.JsonNullValueInput;
     addressSnapshot: Prisma.JsonValue | Prisma.JsonNullValueInput;
     comercial?: string | null;
+    empresaId: string;
     items: Array<{
       productId?: string | null;
       nameSnapshot: string;
@@ -465,6 +479,7 @@ export class SalePrismaRepository implements ISaleRepository {
             clientSnapshot: data.clientSnapshot ?? Prisma.JsonNull,
             addressSnapshot: data.addressSnapshot ?? Prisma.JsonNull,
             comercial: data.comercial ?? null,
+            empresaId: data.empresaId,
           },
         });
 

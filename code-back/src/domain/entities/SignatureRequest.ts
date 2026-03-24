@@ -1,9 +1,11 @@
 export type SignatureStatus = 'pending' | 'signed' | 'rejected';
+export type SignatureDocumentType = 'contract' | 'consent';
 
 export class SignatureRequest {
   constructor(
     public readonly id: string,
     public readonly saleId: string,
+    public readonly documentType: SignatureDocumentType,
     public readonly status: SignatureStatus,
     public readonly signerEmail: string,
     public readonly providerDocumentId: string | null,
@@ -19,6 +21,7 @@ export class SignatureRequest {
   static fromPrisma(data: {
     id: string;
     saleId: string;
+    documentType?: string | null;
     status: string;
     signerEmail: string;
     providerDocumentId?: string | null;
@@ -33,6 +36,7 @@ export class SignatureRequest {
     return new SignatureRequest(
       data.id,
       data.saleId,
+      (data.documentType ?? 'contract') as SignatureDocumentType,
       data.status as SignatureStatus,
       data.signerEmail,
       data.providerDocumentId ?? null,
@@ -50,6 +54,7 @@ export class SignatureRequest {
     return {
       id: this.id,
       saleId: this.saleId,
+      documentType: this.documentType,
       status: this.status,
       signerEmail: this.signerEmail,
       providerDocumentId: this.providerDocumentId,

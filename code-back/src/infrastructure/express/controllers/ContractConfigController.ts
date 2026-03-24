@@ -155,9 +155,10 @@ export class ContractConfigController {
       if (!req.user) throw new AuthenticationError('No autorizado');
 
       const repo = serviceContainer.systemSettingRepository;
+      const empresaId = req.user!.empresaId;
       const [configRaw, logoPath] = await Promise.all([
-        repo.get(SETTING_CONFIG_KEY),
-        repo.get(SETTING_LOGO_KEY),
+        repo.get(SETTING_CONFIG_KEY, empresaId),
+        repo.get(SETTING_LOGO_KEY, empresaId),
       ]);
 
       const logo = logoPath ?? null;
@@ -182,7 +183,8 @@ export class ContractConfigController {
 
       const body = req.body as Partial<ContractConfig>;
       const repo = serviceContainer.systemSettingRepository;
-      const configRaw = await repo.get(SETTING_CONFIG_KEY);
+      const empresaId = req.user!.empresaId;
+      const configRaw = await repo.get(SETTING_CONFIG_KEY, empresaId);
       const existing: Partial<ContractConfig> = configRaw ? JSON.parse(configRaw) : {};
 
       const updated: Partial<ContractConfig> = { ...existing };
@@ -200,9 +202,9 @@ export class ContractConfigController {
         updated.paginasExtra = body.paginasExtra;
       }
 
-      await repo.set(SETTING_CONFIG_KEY, JSON.stringify(updated));
+      await repo.set(SETTING_CONFIG_KEY, JSON.stringify(updated), empresaId);
 
-      const logoPath = await repo.get(SETTING_LOGO_KEY);
+      const logoPath = await repo.get(SETTING_LOGO_KEY, empresaId);
       const logo = logoPath ?? null;
       res.json({
         ...DEFAULT_CONTRACT_CONFIG,
@@ -225,7 +227,7 @@ export class ContractConfigController {
       }
 
       const relativePath = req.file.path;
-      await serviceContainer.systemSettingRepository.set(SETTING_LOGO_KEY, relativePath);
+      await serviceContainer.systemSettingRepository.set(SETTING_LOGO_KEY, relativePath, req.user!.empresaId);
 
       res.json({ logoUrl: logoUrl(), logoPath: relativePath });
     } catch (error) {
@@ -239,13 +241,14 @@ export class ContractConfigController {
       requireAdmin(req);
 
       const repo = serviceContainer.systemSettingRepository;
-      const logoPath = await repo.get(SETTING_LOGO_KEY);
+      const empresaId = req.user!.empresaId;
+      const logoPath = await repo.get(SETTING_LOGO_KEY, empresaId);
 
       if (logoPath && fs.existsSync(logoPath)) {
         fs.unlinkSync(logoPath);
       }
 
-      await repo.set(SETTING_LOGO_KEY, '');
+      await repo.set(SETTING_LOGO_KEY, '', empresaId);
 
       res.json({ message: 'Logo eliminado' });
     } catch (error) {
@@ -259,7 +262,7 @@ export class ContractConfigController {
       if (!req.user) throw new AuthenticationError('No autorizado');
 
       const repo = serviceContainer.systemSettingRepository;
-      const logoPath = await repo.get(SETTING_LOGO_KEY);
+      const logoPath = await repo.get(SETTING_LOGO_KEY, req.user!.empresaId);
 
       if (!logoPath || !fs.existsSync(logoPath)) {
         return res.status(404).json({ message: 'No hay logo configurado' });

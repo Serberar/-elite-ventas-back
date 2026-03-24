@@ -96,7 +96,7 @@ export class HealthChecker {
 
   private async testClientRepository(): Promise<void> {
     try {
-      await this.clientRepository.getByPhoneOrDNI('health-check-test');
+      await this.clientRepository.getByPhoneOrDNI('health-check-test', '');
     } catch (error) {
       if (
         error instanceof Error &&

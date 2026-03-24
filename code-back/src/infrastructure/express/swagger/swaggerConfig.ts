@@ -45,7 +45,7 @@ const options: swaggerJsdoc.Options = {
             username: { type: 'string' },
             firstName: { type: 'string' },
             lastName: { type: 'string' },
-            role: { type: 'string', enum: ['administrador', 'coordinador', 'verificador', 'comercial'] },
+            role: { type: 'string', enum: ['administrador', 'coordinador', 'comercial'] },
           },
         },
         LoginRequest: {

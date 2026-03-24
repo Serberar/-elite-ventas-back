@@ -14,6 +14,7 @@ function formatSaleResponse(saleWithRelations: NonNullable<Awaited<ReturnType<ty
     assignments: saleWithRelations.assignments.map((a) => a.toPrisma()),
     histories: saleWithRelations.histories.map((h) => h.toPrisma()),
     signatureRequest: saleWithRelations.signatureRequest ?? null,
+    consentRequest: saleWithRelations.consentRequest ?? null,
   };
 }
 
@@ -55,6 +56,10 @@ export class SaleController {
         throw new NotFoundError('Venta', saleId);
       }
 
+      if (saleWithRelations.sale.empresaId !== currentUser.empresaId) {
+        throw new NotFoundError('Venta', saleId);
+      }
+
       res.status(200).json(formatSaleResponse(saleWithRelations));
     } catch (error) {
       next(error);
@@ -72,6 +77,7 @@ export class SaleController {
         from: req.query.from ? new Date(req.query.from as string) : undefined,
         to: req.query.to ? new Date(req.query.to as string) : undefined,
         comercial: req.query.comercial as string | undefined,
+        empresaId: currentUser.empresaId,
       };
 
       const salesWithRelations = await serviceContainer.saleRepository.listWithRelations(filters);
@@ -99,6 +105,7 @@ export class SaleController {
         from: req.query.from ? new Date(req.query.from as string) : undefined,
         to: req.query.to ? new Date(req.query.to as string) : undefined,
         comercial: req.query.comercial as string | undefined,
+        empresaId: currentUser.empresaId,
       };
 
       const result = await serviceContainer.saleRepository.listPaginatedWithRelations(filters, pagination);
@@ -256,7 +263,7 @@ export class SaleController {
       const currentUser = req.user;
       if (!currentUser) throw new AuthenticationError('No autorizado');
 
-      const comerciales = await serviceContainer.saleRepository.getDistinctComerciales();
+      const comerciales = await serviceContainer.saleRepository.getDistinctComerciales(currentUser.empresaId);
       res.status(200).json(comerciales);
     } catch (error) {
       next(error);

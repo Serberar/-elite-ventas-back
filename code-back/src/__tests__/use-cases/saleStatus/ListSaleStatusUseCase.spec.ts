@@ -12,6 +12,7 @@ describe('ListSaleStatusUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Test',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockStatuses = [
@@ -61,6 +62,7 @@ describe('ListSaleStatusUseCase', () => {
         id: 'user-456',
         role: 'coordinador',
         firstName: 'Coordinador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       mockRepository.list.mockResolvedValue(mockStatuses);
@@ -70,11 +72,12 @@ describe('ListSaleStatusUseCase', () => {
       expect(result).toEqual(mockStatuses);
     });
 
-    it('should work with verificador role', async () => {
+    it('should work with coordinador role', async () => {
       const verificadorUser: CurrentUser = {
         id: 'user-789',
-        role: 'verificador',
+        role: 'coordinador',
         firstName: 'Verificador',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
       mockRepository.list.mockResolvedValue(mockStatuses);
@@ -84,15 +87,19 @@ describe('ListSaleStatusUseCase', () => {
       expect(result).toEqual(mockStatuses);
     });
 
-    it('should throw AuthorizationError for comercial role', async () => {
+    it('should work with comercial role', async () => {
       const comercialUser: CurrentUser = {
         id: 'user-999',
         role: 'comercial',
         firstName: 'Comercial',
+        empresaId: '00000000-0000-0000-0000-000000000001',
       };
 
-      await expect(useCase.execute(comercialUser)).rejects.toThrow(AuthorizationError);
-      expect(mockRepository.list).not.toHaveBeenCalled();
+      mockRepository.list.mockResolvedValue(mockStatuses);
+
+      const result = await useCase.execute(comercialUser);
+      expect(result).toEqual(mockStatuses);
+      expect(mockRepository.list).toHaveBeenCalled();
     });
 
     it('should handle repository errors', async () => {

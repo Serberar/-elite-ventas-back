@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { serviceContainer } from '@infrastructure/container/ServiceContainer';
 import logger from '@infrastructure/observability/logger/logger';
+import { AuthRequest } from '@infrastructure/express/middleware/authMiddleware';
 import {
   setAuthCookies,
   setAccessTokenCookie,
@@ -16,7 +17,8 @@ interface RegisterBody {
   lastName: string;
   username: string;
   password: string;
-  role: 'administrador' | 'comercial' | 'gestor';
+  role: 'administrador' | 'coordinador' | 'comercial';
+  empresaId?: string;
 }
 
 interface LoginBody {
@@ -31,7 +33,9 @@ interface RefreshTokenBody {
 export class UserController {
   static async getAll(req: Request, res: Response) {
     try {
-      const users = await serviceContainer.getAllUsersUseCase.execute();
+      const currentUser = req.user;
+      if (!currentUser) return res.status(401).json({ error: 'No autorizado' });
+      const users = await serviceContainer.getAllUsersUseCase.execute(currentUser.empresaId, currentUser.role);
       res.status(200).json(users);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error al obtener usuarios';
@@ -53,9 +57,11 @@ export class UserController {
 
   static async update(req: Request, res: Response) {
     try {
+      const currentUser = req.user;
+      if (!currentUser) return res.status(401).json({ error: 'No autorizado' });
       const { id } = req.params as Record<string, string>;
       const updateData = req.body;
-      const user = await serviceContainer.updateUserUseCase.execute(id, updateData);
+      const user = await serviceContainer.updateUserUseCase.execute(id, updateData, currentUser);
       res.status(200).json({ user, message: 'Usuario actualizado correctamente' });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error al actualizar usuario';
@@ -68,6 +74,8 @@ export class UserController {
 
   static async register(req: Request, res: Response) {
     try {
+      const currentUser = req.user;
+      if (!currentUser) return res.status(401).json({ error: 'No autorizado' });
       const userData = req.body as RegisterBody;
       const user = await serviceContainer.registerUserUseCase.execute({
         firstName: userData.firstName,
@@ -75,6 +83,7 @@ export class UserController {
         username: userData.username,
         password: userData.password,
         role: userData.role,
+        empresaId: userData.empresaId ?? currentUser.empresaId,
       });
       res.status(201).json({
         user: {
@@ -83,6 +92,10 @@ export class UserController {
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
+          active: user.active,
+          failedLoginAttempts: user.failedLoginAttempts,
+          empresaId: user.empresaId,
+          createdAt: user.createdAt,
           lastLoginAt: user.lastLoginAt,
         },
         message: 'Usuario creado correctamente',
@@ -215,6 +228,35 @@ export class UserController {
       }
 
       res.status(200).json({ message: 'Sesión cerrada' });
+    }
+  }
+
+  static async getMe(req: AuthRequest, res: Response) {
+    try {
+      const { id, role, firstName, empresaId } = req.user!;
+
+      let paginasHabilitadas: string[] = [];
+      let paginaInicio: string | null = null;
+      let colorPrimario: string | null = null;
+      let logo: string | null = null;
+      let empresaNombre: string | null = null;
+      let colorNombreEmpresa: string | null = null;
+      try {
+        const empresa = await serviceContainer.getEmpresaUseCase.execute(empresaId);
+        paginasHabilitadas = empresa.paginasHabilitadas;
+        paginaInicio = empresa.paginaInicio ?? null;
+        colorPrimario = empresa.colorPrimario ?? null;
+        logo = empresa.logo ?? null;
+        empresaNombre = empresa.nombre;
+        colorNombreEmpresa = empresa.colorNombreEmpresa ?? null;
+      } catch {
+        // Empresa no encontrada → acceso total por defecto
+      }
+
+      res.status(200).json({ id, role, firstName, empresaId, paginasHabilitadas, paginaInicio, colorPrimario, logo, empresaNombre, colorNombreEmpresa });
+    } catch (error) {
+      logger.error('Error getting current user', { error });
+      res.status(500).json({ error: 'Error al obtener usuario actual' });
     }
   }
 }

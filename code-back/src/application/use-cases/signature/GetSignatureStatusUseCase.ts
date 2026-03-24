@@ -21,7 +21,7 @@ export class GetSignatureStatusUseCase {
       'consultar estado de firma'
     );
 
-    const signatureRequest = await this.signatureRepo.findBySaleId(saleId);
+    const signatureRequest = await this.signatureRepo.findBySaleIdAndType(saleId, 'contract');
 
     // Si está pendiente y tiene ID de proveedor, consultamos a Lleida.net en tiempo real
     if (signatureRequest?.status === 'pending' && signatureRequest.providerDocumentId) {

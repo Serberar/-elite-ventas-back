@@ -21,11 +21,12 @@ describe('ChangeSaleStatusUseCase', () => {
     id: 'user-123',
     role: 'administrador',
     firstName: 'Admin',
+    empresaId: '00000000-0000-0000-0000-000000000001',
   };
 
   const mockSale = new Sale(
     'sale-123', 'client-1', 'status-1', 100, null, null, null, null, null,
-    new Date('2024-01-01'), new Date('2024-01-01'), null
+    new Date('2024-01-01'), new Date('2024-01-01'), null, '00000000-0000-0000-0000-000000000001'
   );
 
   const regularStatus = new SaleStatus('status-2', 'En proceso', 2, '#00FF00', false, false, false);
@@ -34,7 +35,7 @@ describe('ChangeSaleStatusUseCase', () => {
 
   const updatedSale = new Sale(
     'sale-123', 'client-1', 'status-2', 100, null, null, null, null, null,
-    new Date('2024-01-01'), new Date('2024-01-02'), null
+    new Date('2024-01-01'), new Date('2024-01-02'), null, '00000000-0000-0000-0000-000000000001'
   );
 
   beforeEach(() => {
@@ -143,7 +144,7 @@ describe('ChangeSaleStatusUseCase', () => {
     });
 
     it('should work with coordinador role', async () => {
-      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C' };
+      const coordinadorUser: CurrentUser = { id: 'u2', role: 'coordinador', firstName: 'C', empresaId: '00000000-0000-0000-0000-000000000001' };
       mockSaleRepo.findById.mockResolvedValue(mockSale);
       mockStatusRepo.findById
         .mockResolvedValueOnce(regularStatus)
@@ -160,7 +161,7 @@ describe('ChangeSaleStatusUseCase', () => {
     });
 
     it('should throw AuthorizationError for comercial role', async () => {
-      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com' };
+      const comercialUser: CurrentUser = { id: 'u4', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
 
       await expect(
         useCase.execute({ saleId: 'sale-123', statusId: 'status-2' }, comercialUser)

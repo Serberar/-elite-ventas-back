@@ -3,7 +3,7 @@ import { serviceContainer } from '@infrastructure/container/ServiceContainer';
 import { AuthenticationError, ValidationError } from '@application/shared/AppError';
 
 /** Claves permitidas de configuración (whitelist explícita) */
-const ALLOWED_KEYS = new Set(['firma_requerida', 'ventas_sin_firma']);
+const ALLOWED_KEYS = new Set(['firma_requerida', 'ventas_sin_firma', 'requiere_autorizacion_llamada']);
 
 export class SettingsController {
   // GET /api/settings/:key
@@ -17,9 +17,9 @@ export class SettingsController {
         return res.status(404).json({ message: `Configuración '${key}' no encontrada` });
       }
 
-      // firma_requerida: default true; ventas_sin_firma: default false
+      // firma_requerida: default true; ventas_sin_firma: default false; requiere_autorizacion_llamada: default true
       const defaultValue = key === 'ventas_sin_firma' ? false : true;
-      const value = await serviceContainer.getSystemSettingUseCase.executeAsBool(key, defaultValue);
+      const value = await serviceContainer.getSystemSettingUseCase.executeAsBool(key, currentUser.empresaId, defaultValue);
       res.status(200).json({ key, value });
     } catch (error) {
       next(error);

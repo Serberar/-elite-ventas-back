@@ -63,7 +63,7 @@ export class AllowedIpController {
       const clientIp = resolveClientIp(req);
       const isPrivate = clientIp ? ipLib.isPrivate(clientIp) : false;
 
-      const whitelistedIps = await serviceContainer.allowedIpRepository.listIpStrings();
+      const whitelistedIps = await serviceContainer.allowedIpRepository.listIpStrings(currentUser.empresaId);
       const isWhitelisted = clientIp ? whitelistedIps.includes(clientIp) : false;
 
       // La IP tiene acceso garantizado si es privada (red local) o está en la lista
@@ -89,8 +89,8 @@ export class AllowedIpController {
         throw new AuthorizationError('Solo administradores pueden ver la configuración de filtrado');
       }
 
-      const filteringEnabled = await serviceContainer.systemSettingRepository.getBool('ip_filter_enabled');
-      const allowAll = await serviceContainer.systemSettingRepository.getBool(IP_FILTER_ALLOW_ALL_KEY);
+      const filteringEnabled = await serviceContainer.systemSettingRepository.getBool('ip_filter_enabled', currentUser.empresaId);
+      const allowAll = await serviceContainer.systemSettingRepository.getBool(IP_FILTER_ALLOW_ALL_KEY, currentUser.empresaId);
 
       res.status(200).json({ filteringEnabled, allowAll });
     } catch (error) {
@@ -114,7 +114,7 @@ export class AllowedIpController {
           res.status(400).json({ message: 'El campo "filteringEnabled" debe ser un booleano' });
           return;
         }
-        await serviceContainer.systemSettingRepository.set('ip_filter_enabled', filteringEnabled ? 'true' : 'false');
+        await serviceContainer.systemSettingRepository.set('ip_filter_enabled', filteringEnabled ? 'true' : 'false', currentUser.empresaId);
       }
 
       if (allowAll !== undefined) {
@@ -122,7 +122,7 @@ export class AllowedIpController {
           res.status(400).json({ message: 'El campo "allowAll" debe ser un booleano' });
           return;
         }
-        await serviceContainer.systemSettingRepository.set(IP_FILTER_ALLOW_ALL_KEY, allowAll ? 'true' : 'false');
+        await serviceContainer.systemSettingRepository.set(IP_FILTER_ALLOW_ALL_KEY, allowAll ? 'true' : 'false', currentUser.empresaId);
       }
 
       res.status(200).json({ message: 'Configuración de filtrado actualizada' });

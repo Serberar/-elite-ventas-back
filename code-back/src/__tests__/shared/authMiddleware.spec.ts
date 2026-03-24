@@ -47,7 +47,7 @@ describe('authMiddleware', () => {
   });
 
   it('debería setear req.user y llamar a next si el token es válido', () => {
-    const mockUser: CurrentUser = { id: '1', role: 'administrador', firstName: 'Test' };
+    const mockUser: CurrentUser = { id: '1', role: 'administrador', firstName: 'Test', empresaId: '00000000-0000-0000-0000-000000000001' };
     req.headers = { authorization: 'Bearer validToken' };
     (jwt.verify as jest.Mock).mockReturnValue(mockUser);
 

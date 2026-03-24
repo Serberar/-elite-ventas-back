@@ -100,6 +100,7 @@ describe('SalePrismaRepository', () => {
         metadata,
         clientSnapshot: mockClientSnapshot,
         addressSnapshot: mockAddressSnapshot,
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
 
       expect(result).toBeInstanceOf(Sale);
@@ -113,6 +114,7 @@ describe('SalePrismaRepository', () => {
           clientSnapshot: mockClientSnapshot,
           addressSnapshot: mockAddressSnapshot,
           comercial: null,
+          empresaId: '00000000-0000-0000-0000-000000000001',
         },
       });
     });
@@ -125,6 +127,7 @@ describe('SalePrismaRepository', () => {
         statusId: 'status-123',
         clientSnapshot: mockClientSnapshot,
         addressSnapshot: mockAddressSnapshot,
+        empresaId: '00000000-0000-0000-0000-000000000001',
       });
 
       expect(result).toBeInstanceOf(Sale);
@@ -138,6 +141,7 @@ describe('SalePrismaRepository', () => {
           clientSnapshot: mockClientSnapshot,
           addressSnapshot: mockAddressSnapshot,
           comercial: null,
+          empresaId: '00000000-0000-0000-0000-000000000001',
         },
       });
     });
@@ -152,6 +156,7 @@ describe('SalePrismaRepository', () => {
           statusId: 'status-123',
           clientSnapshot: mockClientSnapshot,
           addressSnapshot: mockAddressSnapshot,
+          empresaId: '00000000-0000-0000-0000-000000000001',
         })
       ).rejects.toThrow(error);
     });
@@ -266,7 +271,7 @@ describe('SalePrismaRepository', () => {
         ],
         client: null,
         status: null,
-        signatureRequest: null,
+        signatureRequests: [],
       };
 
       (prisma.sale.findUnique as jest.Mock).mockResolvedValue(mockSaleWithRelations);
@@ -292,7 +297,7 @@ describe('SalePrismaRepository', () => {
           },
           client: true,
           status: true,
-          signatureRequest: true,
+          signatureRequests: true,
         },
       });
     });
@@ -313,7 +318,7 @@ describe('SalePrismaRepository', () => {
         histories: [],
         client: null,
         status: null,
-        signatureRequest: null,
+        signatureRequests: [],
       };
 
       (prisma.sale.findUnique as jest.Mock).mockResolvedValue(saleWithEmptyRelations);

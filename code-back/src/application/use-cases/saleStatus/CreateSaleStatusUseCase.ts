@@ -20,6 +20,7 @@ export class CreateSaleStatusUseCase {
       color: dto.color ?? null,
       isFinal: dto.isFinal ?? false,
       isCancelled: dto.isCancelled ?? false,
+      empresaId: currentUser.empresaId,
     });
   }
 }

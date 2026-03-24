@@ -27,8 +27,8 @@ describe('AllowedIpController', () => {
   let statusMock: jest.Mock;
   let jsonMock: jest.Mock;
 
-  const adminUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin' };
-  const comercialUser: CurrentUser = { id: 'user-2', role: 'comercial', firstName: 'Com' };
+  const adminUser: CurrentUser = { id: 'user-1', role: 'administrador', firstName: 'Admin', empresaId: '00000000-0000-0000-0000-000000000001' };
+  const comercialUser: CurrentUser = { id: 'user-2', role: 'comercial', firstName: 'Com', empresaId: '00000000-0000-0000-0000-000000000001' };
 
   beforeEach(() => {
     statusMock = jest.fn().mockReturnThis();
@@ -163,7 +163,7 @@ describe('AllowedIpController', () => {
     });
 
     it('should return 200 with ip info for private IP in whitelist', async () => {
-      req.socket = { remoteAddress: '192.168.1.10' } as any;
+      (req as any).ip = '192.168.1.10';
       (ipLib.isPrivate as jest.Mock).mockReturnValue(true);
       (serviceContainer.allowedIpRepository.listIpStrings as jest.Mock).mockResolvedValue([
         '192.168.1.10',
@@ -181,7 +181,7 @@ describe('AllowedIpController', () => {
     });
 
     it('should return 200 with public IP that is whitelisted', async () => {
-      req.socket = { remoteAddress: '203.0.113.5' } as any;
+      (req as any).ip = '203.0.113.5';
       (ipLib.isPrivate as jest.Mock).mockReturnValue(false);
       (serviceContainer.allowedIpRepository.listIpStrings as jest.Mock).mockResolvedValue([
         '203.0.113.5',
@@ -198,7 +198,7 @@ describe('AllowedIpController', () => {
     });
 
     it('should return 200 with public IP not in whitelist', async () => {
-      req.socket = { remoteAddress: '8.8.8.8' } as any;
+      (req as any).ip = '8.8.8.8';
       (ipLib.isPrivate as jest.Mock).mockReturnValue(false);
       (serviceContainer.allowedIpRepository.listIpStrings as jest.Mock).mockResolvedValue([]);
 
@@ -213,8 +213,7 @@ describe('AllowedIpController', () => {
     });
 
     it('should use X-Forwarded-For header when present', async () => {
-      req.headers = { 'x-forwarded-for': '203.0.113.99, 10.0.0.1' };
-      req.socket = { remoteAddress: '10.0.0.1' } as any;
+      (req as any).ip = '203.0.113.99';
       (ipLib.isPrivate as jest.Mock).mockReturnValue(false);
       (serviceContainer.allowedIpRepository.listIpStrings as jest.Mock).mockResolvedValue([]);
 
@@ -226,8 +225,7 @@ describe('AllowedIpController', () => {
     });
 
     it('should normalize ::ffff: IPv6 prefix to IPv4', async () => {
-      req.headers = {};
-      req.socket = { remoteAddress: '::ffff:192.168.1.50' } as any;
+      (req as any).ip = '::ffff:192.168.1.50';
       (ipLib.isPrivate as jest.Mock).mockReturnValue(true);
       (serviceContainer.allowedIpRepository.listIpStrings as jest.Mock).mockResolvedValue([]);
 
@@ -273,6 +271,10 @@ describe('AllowedIpController', () => {
 
       await AllowedIpController.getFilterMode(req as any, res as any, next);
 
+      expect(serviceContainer.systemSettingRepository.getBool).toHaveBeenCalledWith(
+        'ip_filter_enabled',
+        '00000000-0000-0000-0000-000000000001'
+      );
       expect(statusMock).toHaveBeenCalledWith(200);
       expect(jsonMock).toHaveBeenCalledWith({ filteringEnabled: true, allowAll: false });
       expect(next).not.toHaveBeenCalled();
@@ -313,7 +315,8 @@ describe('AllowedIpController', () => {
 
       expect(serviceContainer.systemSettingRepository.set).toHaveBeenCalledWith(
         'ip_filter_enabled',
-        'true'
+        'true',
+        '00000000-0000-0000-0000-000000000001'
       );
       expect(statusMock).toHaveBeenCalledWith(200);
       expect(jsonMock).toHaveBeenCalledWith({ message: 'Configuración de filtrado actualizada' });
@@ -327,7 +330,8 @@ describe('AllowedIpController', () => {
 
       expect(serviceContainer.systemSettingRepository.set).toHaveBeenCalledWith(
         'ip_filter_allow_all',
-        'false'
+        'false',
+        '00000000-0000-0000-0000-000000000001'
       );
       expect(statusMock).toHaveBeenCalledWith(200);
     });

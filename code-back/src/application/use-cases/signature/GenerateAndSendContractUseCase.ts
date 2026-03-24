@@ -10,7 +10,7 @@ import { CurrentUser } from '@application/shared/types/CurrentUser';
 import { SignatureRequest } from '@domain/entities/SignatureRequest';
 import { checkRolePermission } from '@application/shared/authorization/checkRolePermission';
 import { rolePermissions } from '@application/shared/authorization/rolePermissions';
-import { NotFoundError, ValidationError } from '@application/shared/AppError';
+import { NotFoundError, ValidationError, AuthorizationError } from '@application/shared/AppError';
 
 export interface GenerateAndSendContractDTO {
   saleId: string;
@@ -56,8 +56,12 @@ export class GenerateAndSendContractUseCase {
   ) {}
 
   /** Genera el PDF de previsualización sin enviarlo. Usa la misma config que execute(). */
-  async generatePreviewPdf(templateId: string | undefined, data: PreviewContractData): Promise<Buffer> {
-    const contractConfig = await ContractTemplateController.loadForPdf(templateId);
+  async generatePreviewPdf(
+    templateId: string | undefined,
+    data: PreviewContractData,
+    empresaId: string
+  ): Promise<Buffer> {
+    const contractConfig = await ContractTemplateController.loadForPdf(templateId, empresaId);
     const totalAmount = data.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
     const contractData = {
       saleId: 'PREVISUALIZACIÓN',
@@ -95,8 +99,26 @@ export class GenerateAndSendContractUseCase {
 
     const sale = saleWithRelations.sale;
 
+    // Verificar que la venta pertenece a la empresa del usuario
+    if (sale.empresaId !== currentUser.empresaId) {
+      throw new AuthorizationError('No tienes permisos para operar sobre esta venta');
+    }
+
+    // Verificar si esta empresa requiere autorización de llamada previa al contrato
+    const rawRequiereAuth = await this.settingRepo.get('requiere_autorizacion_llamada', currentUser.empresaId);
+    const requiereAutorizacion = rawRequiereAuth === null ? true : rawRequiereAuth === 'true';
+
+    if (requiereAutorizacion) {
+      const consentRequest = await this.signatureRepo.findBySaleIdAndType(dto.saleId, 'consent');
+      if (!consentRequest || consentRequest.status !== 'signed') {
+        throw new ValidationError(
+          'El cliente debe firmar la autorización de llamada antes de poder enviar el contrato.'
+        );
+      }
+    }
+
     // Si ya hay una solicitud pendiente, rechazar
-    const existing = await this.signatureRepo.findBySaleId(dto.saleId);
+    const existing = await this.signatureRepo.findBySaleIdAndType(dto.saleId, 'contract');
     if (existing && existing.status === 'pending') {
       throw new ValidationError(
         'Ya existe un contrato pendiente de firma para esta venta. Usa "Reenviar" si el cliente no lo recibió.'
@@ -120,8 +142,8 @@ export class GenerateAndSendContractUseCase {
       } : undefined,
     };
 
-    // Cargar configuración de contrato y generar PDF
-    const contractConfig = await ContractTemplateController.loadForPdf(dto.templateId);
+    // Cargar configuración de contrato y generar PDF (solo plantillas de esta empresa)
+    const contractConfig = await ContractTemplateController.loadForPdf(dto.templateId, currentUser.empresaId);
     const contractData = {
       saleId: sale.id,
       createdAt: sale.createdAt,
@@ -175,6 +197,7 @@ export class GenerateAndSendContractUseCase {
     } else {
       signatureRequest = await this.signatureRepo.create({
         saleId: sale.id,
+        documentType: 'contract',
         status: 'pending',
         signerEmail: signerContact,
         providerDocumentId: documentId,

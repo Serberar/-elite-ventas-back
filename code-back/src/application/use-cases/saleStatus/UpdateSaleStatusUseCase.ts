@@ -3,7 +3,7 @@ import { UpdateSaleStatusDTO } from '@infrastructure/express/validation/saleStat
 import { CurrentUser } from '@application/shared/types/CurrentUser';
 import { checkRolePermission } from '@application/shared/authorization/checkRolePermission';
 import { rolePermissions } from '@application/shared/authorization/rolePermissions';
-import { NotFoundError, ValidationError } from '@application/shared/AppError';
+import { NotFoundError, ValidationError, AuthorizationError } from '@application/shared/AppError';
 
 export class UpdateSaleStatusUseCase {
   constructor(private statusRepo: ISaleStatusRepository) {}
@@ -17,6 +17,10 @@ export class UpdateSaleStatusUseCase {
 
     const existing = await this.statusRepo.findById(dto.id);
     if (!existing) throw new NotFoundError('Estado de venta', dto.id);
+
+    if (existing.empresaId !== currentUser.empresaId) {
+      throw new AuthorizationError('No tienes permiso para modificar este estado');
+    }
 
     if (existing.isSystem) {
       throw new ValidationError('No se puede modificar un estado de sistema');

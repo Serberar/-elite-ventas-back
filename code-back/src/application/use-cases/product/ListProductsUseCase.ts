@@ -17,7 +17,7 @@ export class ListProductsUseCase {
 
     logger.info(`Listando productos — usuario ${currentUser.id}`);
 
-    const list = await this.repository.findAll();
+    const list = await this.repository.findAll(currentUser.empresaId);
 
     return list;
   }
